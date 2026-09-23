@@ -93,16 +93,23 @@
   .toolbar .btn { backdrop-filter: blur(8px); background: rgba(28,24,19,.78); }
   .toolbar .btn.primary { background: var(--accent); }
   .stats { position: absolute; left: 16px; bottom: 16px; background: rgba(28,24,19,.82); backdrop-filter: blur(8px);
-    border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; min-width: 250px; max-width: 360px; }
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; min-width: 250px; max-width: 420px; }
   .stats dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
   .stats dt { color: var(--muted); }
   .stats dd { margin: 0; font-family: "IBM Plex Mono", monospace; text-align: right; }
   .warnings { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; font-size: 12.5px; }
   .warnings li { color: var(--warn); line-height: 1.4; }
   .warnings li.ok { color: var(--ok); }
+  .warnings li:not(.ok) { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; }
+  .warnings li.fix-all { justify-content: flex-end; }
+  .fix { flex: none; border: 1px solid var(--warn); background: transparent; color: var(--warn); font: inherit; font-size: 12px;
+    font-weight: 600; padding: 3px 9px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .fix:hover { background: var(--warn); color: var(--bg); }
+  .fix:disabled { opacity: .5; cursor: wait; }
   .hint { position: absolute; right: 16px; bottom: 16px; color: var(--muted); font-size: 12px; }
   .toast { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg);
-    padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+    padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
+    max-width: min(640px, calc(100% - 32px)); text-align: center; line-height: 1.45; }
   .toast.show { opacity: 1; }
   .busy { position: absolute; top: 22px; left: 16px; font-size: 12px; color: var(--muted); font-family: "IBM Plex Mono", monospace;
     opacity: 0; transition: opacity .15s; pointer-events: none; }
@@ -153,6 +160,7 @@
       <button class="btn" id="btnExplode" hidden>Zerlegt</button>
       <button class="btn primary" id="btnStl">STL Schirm</button>
       <button class="btn primary" id="btnStlBase" hidden>STL Sockel</button>
+      <button class="btn primary" id="btnStlDiff" hidden>STL Diffusor</button>
     </div>
     <div class="busy" id="busy">Berechne …</div>
     <div class="stats">
@@ -240,6 +248,13 @@ const SCHEMA = [
     { k: 'panelEcke', l: 'Panel-Eckenradius', min: 0, max: 30, step: 0.5, def: 3, u: 'mm' },
     { k: 'einsatzTiefe', l: 'Einlasstiefe (Dicke)', min: 0, max: 25, step: 0.5, def: 8, u: 'mm' },
     { k: 'falz', l: 'Auflagekante', min: 1, max: 12, step: 0.5, def: 3, u: 'mm' },
+    { k: 'spiel', l: 'Passungsspiel je Seite', min: 0, max: 1, step: 0.05, def: 0.2, u: 'mm' },
+    { k: 'diffusor', l: 'Diffusor über Puck/Panel (eigenes Druckteil)', type: 'check', def: true },
+    { k: 'diffusorForm', l: 'Diffusor-Form', type: 'select', def: 'flach', opts: [
+      ['flach', 'Flache Platte (bündig auf dem Panel)'], ['haube', 'Haube (mit Abstand zum Panel, streut stärker)']] },
+    { k: 'diffusorDicke', l: 'Diffusor-Stärke', min: 0.4, max: 3, step: 0.1, def: 0.8, u: 'mm' },
+    { k: 'diffusorHoehe', l: 'Haubenhöhe über dem Deckel', min: 3, max: 80, step: 0.5, def: 20, u: 'mm' },
+    { k: 'diffusorWand', l: 'Haubenwand', min: 0.8, max: 3, step: 0.1, def: 1.2, u: 'mm' },
     { k: 'fassungTyp', l: 'Fassungstyp', type: 'select', def: 'e27', opts: [
       ['e27', 'E27 (Loch ca. 42 mm)'], ['e14', 'E14 (Loch ca. 29 mm)'], ['gu10', 'GU10 (Loch ca. 36 mm)'], ['frei', 'Eigenes Maß']] },
     { k: 'lochD', l: 'Lochdurchmesser', min: 15, max: 80, step: 0.5, def: 42, u: 'mm' },
@@ -405,6 +420,23 @@ class MeshBuilder {
     const zAvg = Array.isArray(zb) ? zb.reduce((a, c) => a + c, 0) / M : zb;
     this.volume += (area2(outer) - area2(inner)) * (zt - zAvg);
   }
+
+  // Volle Platte mit sternförmigem Umriss (gegen den Uhrzeigersinn, Mittelpunkt innen)
+  addPlate(loop, zb, zt) {
+    const M = loop.length;
+    let b = this.vcount;
+    this.v(0, 0, zt);
+    for (const [x, y] of loop) this.v(x, y, zt);
+    for (let i = 0; i < M; i++) this.idx.push(b, b + 1 + i, b + 1 + (i + 1) % M);
+    b = this.vcount;
+    this.v(0, 0, zb);
+    for (const [x, y] of loop) this.v(x, y, zb);
+    for (let i = 0; i < M; i++) this.idx.push(b, b + 1 + (i + 1) % M, b + 1 + i);
+    b = this.vcount;
+    for (const [x, y] of loop) { this.v(x, y, zb); this.v(x, y, zt); }
+    for (let i = 0; i < M; i++) { const j = (i + 1) % M; this.idx.push(b + 2 * i, b + 2 * j, b + 2 * j + 1, b + 2 * i, b + 2 * j + 1, b + 2 * i + 1); }
+    this.volume += area2(loop) * (zt - zb);
+  }
 }
 
 function makeProfile(p) {
@@ -502,6 +534,30 @@ function frames(Pts, normals) {
     T.push(t); N.push(nn); B.push(cross(t, nn));
   }
   return { T, N, B };
+}
+
+// Warnung mit Kennung, damit es dazu eine automatische Korrektur geben kann
+const W = (code, text) => ({ code, text });
+const OVERHANG_MAX = 55, TRIS_MAX = 1500000;
+
+// Größte Neigung der Strangverläufe gegen die Senkrechte (ohne Webversatz), an count Strängen je Richtung
+function measureOverhang(p, count = 128, segs = 480) {
+  const { S } = makeSurface(p);
+  const waveS = p.wellenAmp / 360;
+  const dirs = p.muster === 'keine' ? [] : p.muster === 'geflecht' ? (p.drehung > 0 ? [1, -1] : [1]) : p.muster === 'rechts' ? [1] : [-1];
+  const paths = [];
+  for (const dir of dirs) for (let i = 0; i < count; i++) paths.push([i / count, dir]);
+  for (let i = 0; i < p.rippen; i++) paths.push([(i + 0.5) / p.rippen, 0]);
+  let mx = 0;
+  for (const [s0, dir] of paths) {
+    let prev = null;
+    for (let k = 0; k <= segs; k++) {
+      const t = k / segs, c = S(s0 + dir * p.drehung * t + waveS * Math.sin(p.wellenFreq * 2 * Math.PI * t), t);
+      if (prev) { const d = sub(c, prev); mx = Math.max(mx, Math.acos(Math.min(1, Math.abs(d[2]) / (len(d) || 1))) * 180 / Math.PI); }
+      prev = c;
+    }
+  }
+  return mx;
 }
 
 // Webarten: Folge über/unter entlang eines Strangs (Periode = Länge)
@@ -612,7 +668,7 @@ function buildLampshade(p) {
       const dirv = [Math.cos(a), Math.sin(a), 0], up = [0, 0, 1], Bv = cross(dirv, up);
       mb.addTube([[dirv[0] * r0, dirv[1] * r0, zc], [dirv[0] * r1, dirv[1] * r1, zc]], [up, up], [Bv, Bv], p.speichenBreite, sh, false);
     }
-    if (tooBig) warnings.push('Loch plus Ring ist fast so groß wie der Schirm an dieser Stelle. Einige Speichen fallen weg.');
+    if (tooBig) warnings.push(W('speichen', 'Loch plus Ring ist fast so groß wie der Schirm an dieser Stelle. Einige Speichen fallen weg.'));
   }
 
   // Vollboden im Schirm mit Fassung, Puck oder Panel
@@ -624,6 +680,13 @@ function buildLampshade(p) {
   // Sockel
   const base = p.sockel ? buildBase(p, surf, rimThick, warnings) : null;
 
+  // Diffusor (nur bei Puck/Panel im Boden oder im Sockel)
+  const ins = insertSpec(p, R(0));
+  const ledMounted = (ins.kind === 'puck' || ins.kind === 'panel') && (mount === 'boden' || (mount === 'sockel' && p.sockel));
+  const diff = p.diffusor && ledMounted ? buildDiffuser(p, ins) : null;
+  if (diff && p.diffusorDicke > 1.6)
+    warnings.push(W('diffusor', 'Diffusor dicker als 1,6 mm schluckt viel Licht. 0,6–1,2 mm in Weiß oder Natur ist meist ideal.'));
+
   // Kennzahlen
   let maxX = 0, maxY = 0;
   for (let i = 0; i < mb.pos.length; i += 3) { maxX = Math.max(maxX, Math.abs(mb.pos[i])); maxY = Math.max(maxY, Math.abs(mb.pos[i + 1])); }
@@ -632,35 +695,90 @@ function buildLampshade(p) {
   for (let s = 0; s <= 100; s++) maxR = Math.max(maxR, R(s / 100) * surf.shape.maxRho);
 
   if (woven && 2 * p.webTiefe >= p.strangTiefe)
-    warnings.push('Webversatz ist zu groß: Die Stränge berühren sich an den Kreuzungen nicht mehr. Webversatz unter ' + (p.strangTiefe / 2).toFixed(2) + ' mm halten.');
-  if (maxOverhang > 55)
-    warnings.push(`Stränge sind bis zu ${maxOverhang.toFixed(0)}° geneigt. Ab etwa 55° wird der Druck ohne Stützen unsauber. Weniger Drehung, weniger Verdrehung oder mehr Höhe hilft.`);
+    warnings.push(W('web', 'Webversatz ist zu groß: Die Stränge berühren sich an den Kreuzungen nicht mehr. Webversatz unter ' + (p.strangTiefe / 2).toFixed(2) + ' mm halten.'));
+  // Überhang einheitlich messen, damit die Korrektur und die Warnung denselben Wert sehen
+  maxOverhang = Math.max(maxOverhang, measureOverhang(p));
+  if (maxOverhang > OVERHANG_MAX)
+    warnings.push(W('ueberhang', `Stränge sind bis zu ${maxOverhang.toFixed(0)}° geneigt. Ab etwa ${OVERHANG_MAX}° wird der Druck ohne Stützen unsauber.`));
   if (p.strangBreite < 1.2 || p.strangTiefe < 1)
-    warnings.push('Sehr feine Stränge: Mit 0,4-mm-Düse langsam drucken und Linienbreite im Slicer prüfen.');
+    warnings.push(W('fein', 'Sehr feine Stränge: Mit 0,4-mm-Düse langsam drucken und Linienbreite im Slicer prüfen.'));
   if (p.muster === 'keine' && p.rippen === 0)
-    warnings.push('Kein Geflecht und keine Rippen: Die Ränder hängen lose.');
+    warnings.push(W('lose', 'Kein Geflecht und keine Rippen: Die Ränder hängen lose.'));
   if (mount === 'sockel' && !p.sockel)
-    warnings.push('Fassung ist „Im Sockel“ eingestellt, der Sockel ist aber aus.');
+    warnings.push(W('sockelFehlt', 'Fassung ist „Im Sockel“ eingestellt, der Sockel ist aber aus.'));
   if (p.fassung && p.einsatz !== 'fassung' && mount !== 'sockel' && mount !== 'boden')
-    warnings.push('LED-Puck und LED-Panel gehen nur mit „Boden im Schirm“ oder „Im Sockel“.');
-  const tris = (mb.idx.length + (base ? base.idx.length : 0)) / 3;
-  if (tris > 1500000)
-    warnings.push('Sehr viele Dreiecke. Auflösung oder Strangzahl senken, falls der Slicer langsam wird.');
+    warnings.push(W('einsatzPos', 'LED-Puck und LED-Panel gehen nur mit „Boden im Schirm“ oder „Im Sockel“.'));
+  const tris = (mb.idx.length + (base ? base.idx.length : 0) + (diff ? diff.mb.idx.length : 0)) / 3;
+  if (tris > TRIS_MAX)
+    warnings.push(W('dreiecke', 'Sehr viele Dreiecke. Auflösung oder Strangzahl senken, falls der Slicer langsam wird.'));
   if (!warnings.length) warnings.push({ ok: 'Druckbar ohne Stützstrukturen (Überhang max. ' + maxOverhang.toFixed(0) + '°).' });
 
   return {
     positions: new Float32Array(mb.pos),
     indices: new Uint32Array(mb.idx),
     base: base ? { positions: new Float32Array(base.pos), indices: new Uint32Array(base.idx), height: p.sockelHoehe } : null,
+    insert: ledMounted ? { w: 2 * ins.cut.hx, l: 2 * ins.cut.hy, depth: ins.depth, kind: ins.kind } : null,
+    diffuser: diff ? { positions: new Float32Array(diff.mb.pos), indices: new Uint32Array(diff.mb.idx), height: diff.height,
+      width: diff.width, length: diff.length, grams: diff.mb.volume / 1000 * 1.24 } : null,
     stats: { H, width: 2 * maxX, depth: 2 * maxY, volume: mb.volume + (base ? base.volume : 0), tris, maxOverhang, maxR,
       baseH: base ? p.sockelHoehe : 0, strands: n },
     warnings,
   };
 }
 
-// Umrisse für Fassung, Puck oder Panel, abgetastet an den Winkeln angs
+// Abgerundetes Rechteck: halbe Breite, halbe Länge, Eckenradius
+const rrect = (hx, hy, rr) => ({ hx, hy, rr: Math.max(0, Math.min(rr, hx, hy)) });
+const grow = (r, d) => rrect(Math.max(0.5, r.hx + d), Math.max(0.5, r.hy + d), r.rr + d);
+
+// Winkel, an denen alle Umrisse eines Deckels bzw. Bodens abgetastet werden. Gleichmäßig verteilt plus die
+// exakten Eckpunkte und Eckbögen jedes Rechtecks und die Kanten der Aussparungen, damit keine Sehne eine Ecke abschneidet.
+function insertAngles(p, ins, rects) {
+  const A = [];
+  for (let i = 0; i < 720; i++) A.push(-Math.PI + 2 * Math.PI * i / 720);
+  for (const r of rects) {
+    const quad = [];
+    if (r.rr > 0) {
+      const cx = r.hx - r.rr, cy = r.hy - r.rr;
+      for (let k = 0; k <= 24; k++) {
+        const th = Math.PI / 2 * k / 24;
+        quad.push(Math.atan2(cy + r.rr * Math.sin(th), cx + r.rr * Math.cos(th)));
+      }
+    } else quad.push(Math.atan2(r.hy, r.hx));
+    for (const q of quad) A.push(q, Math.PI - q, -q, q - Math.PI);
+  }
+  if (ins.kind === 'fassung' && p.nasen > 0) {
+    const half = 3 / ins.hx;
+    for (let k = 0; k < p.nasen; k++) {
+      const c = 2 * Math.PI * k / p.nasen + Math.PI / 4;
+      for (const e of [-half, half]) for (const s of [-2e-4, 2e-4]) A.push(Math.atan2(Math.sin(c + e + s), Math.cos(c + e + s)));
+    }
+  }
+  A.sort((a, b) => a - b);
+  return A.filter((a, i) => i === 0 || a - A[i - 1] > 1e-7);
+}
+
+// Polarer Schnitt eines dichten, sternförmigen Umrisses mit Strahlen in Richtung angs (exakter Geradenschnitt)
+function polarSample(loop, angs) {
+  const n = loop.length;
+  return angs.map(a => {
+    const dx = Math.cos(a), dy = Math.sin(a);
+    for (let i = 0; i < n; i++) {
+      const P = loop[i], Q = loop[(i + 1) % n];
+      const c1 = P[0] * dy - P[1] * dx, c2 = Q[0] * dy - Q[1] * dx;
+      if ((c1 <= 0 && c2 > 0) || (c1 >= 0 && c2 < 0)) {
+        const u = c1 / (c1 - c2);
+        const x = P[0] + u * (Q[0] - P[0]), y = P[1] + u * (Q[1] - P[1]);
+        if (x * dx + y * dy > 0) return [x, y];
+      }
+    }
+    return [0, 0];
+  });
+}
+
+const rectLoop = (r, angs) => angs.map(a => { const d = rrectRadius(a, r.hx, r.hy, r.rr); return [d * Math.cos(a), d * Math.sin(a)]; });
+
+// Umrisse für Fassung, Puck oder Panel
 function insertLoops(p, ins, angs) {
-  const loop = (hx, hy, rr) => angs.map(a => { const r = rrectRadius(a, hx, hy, rr); return [r * Math.cos(a), r * Math.sin(a)]; });
   let cut;
   if (ins.kind === 'fassung' && p.nasen > 0) {
     // Loch mit Aussparungen (Nasen der Fassung bzw. Bajonett), je 6 mm breit und 2,5 mm tief
@@ -674,44 +792,46 @@ function insertLoops(p, ins, angs) {
       const r = ins.hx + (d < half ? 2.5 : 0);
       return [r * Math.cos(a), r * Math.sin(a)];
     });
-  } else cut = loop(ins.hx, ins.hy, ins.rr);
-  const f = ins.ledge, w = 2.4;
+  } else cut = rectLoop(ins.cut, angs);
   return {
     cut,
-    ledge: loop(Math.max(2, ins.hx - f), Math.max(2, ins.hy - f), Math.max(0, ins.rr - f)),
-    frame: loop(ins.hx + w, ins.hy + w, ins.rr + w),
-    kragen: loop(ins.hx + p.fassRing, ins.hy + p.fassRing, ins.rr + p.fassRing),
+    ledge: rectLoop(ins.ledge, angs),
+    frame: rectLoop(ins.frame, angs),
+    kragen: rectLoop(grow(ins.cut, p.fassRing), angs),
   };
 }
+
+// Alle Rechtecke, deren Ecken exakt getroffen werden müssen
+const insertRects = (p, ins) => [ins.cut, ins.ledge, ins.frame, grow(ins.cut, p.fassRing)];
 
 // Boden im Schirm (wie beim Original): Platte mit Loch, Kragen um die Fassung bzw. Rahmen um Puck/Panel.
 // Wird mit dem Boden auf dem Druckbett gedruckt, alles wächst nach oben.
 function buildFloor(mb, p, surf, rimThick, warnings) {
   const { S, hNormal } = surf;
-  const M = Math.max(360, Math.round(p.aufloesung * 2.5));
-  const outer = [], innerR = [];
-  for (let i = 0; i < M; i++) {
-    const s = i / M, c = S(s, 0), nh = hNormal(s, 0);
-    outer.push([c[0] + nh[0] * (rimThick / 2 - 0.1), c[1] + nh[1] * (rimThick / 2 - 0.1)]);
-    innerR.push(Math.hypot(c[0] - nh[0] * rimThick / 2, c[1] - nh[1] * rimThick / 2));
+  const D = 1024, outerD = [], innerD = [];
+  for (let i = 0; i < D; i++) {
+    const s = i / D, c = S(s, 0), nh = hNormal(s, 0);
+    outerD.push([c[0] + nh[0] * (rimThick / 2 - 0.1), c[1] + nh[1] * (rimThick / 2 - 0.1)]);
+    innerD.push([c[0] - nh[0] * rimThick / 2, c[1] - nh[1] * rimThick / 2]);
   }
-  const angs = outer.map(([x, y]) => Math.atan2(y, x));
   const ins = insertSpec(p, surf.R(0));
+  const angs = insertAngles(p, ins, insertRects(p, ins));
+  const outer = polarSample(outerD, angs), innerR = polarSample(innerD, angs).map(q => Math.hypot(...q));
   const L = insertLoops(p, ins, angs);
   const T = p.bodenDicke;
-  let fence = null, fenceH = 0;
+  let fence = null;
   if (ins.kind === 'fassung') {
     mb.addExtrudedRing(outer, L.cut, 0, T);
-    if (p.kragen > 0) { fence = L.kragen; fenceH = T + p.kragen; mb.addExtrudedRing(L.kragen, L.cut, 0, fenceH); }
+    if (p.kragen > 0) { fence = L.kragen; mb.addExtrudedRing(L.kragen, L.cut, 0, T + p.kragen); }
   } else {
     // Puck/Panel liegt auf der Auflagekante, der Rahmen hält es seitlich
     mb.addExtrudedRing(outer, ins.depth > 0 ? L.ledge : L.cut, 0, T);
-    if (ins.depth > 0) { fence = L.frame; fenceH = T + ins.depth; mb.addExtrudedRing(L.frame, L.cut, 0, fenceH); }
+    if (ins.depth > 0) { fence = L.frame; mb.addExtrudedRing(L.frame, L.cut, 0, T + ins.depth); }
   }
   const check = fence || L.cut;
   if (check.some((pt, i) => Math.hypot(...pt) + 1 > innerR[i]))
-    warnings.push(ins.kind === 'panel' ? 'Das LED-Panel passt nicht in den Boden. Radius unten oder Seitenverhältnis vergrößern.'
-      : ins.kind === 'puck' ? 'Der LED-Puck passt nicht in den Boden.' : 'Fassungsloch plus Kragen passt nicht in den Boden.');
+    warnings.push(W('passtBoden', ins.kind === 'panel' ? 'Das LED-Panel passt nicht in den Boden. Radius unten oder Seitenverhältnis vergrößern.'
+      : ins.kind === 'puck' ? 'Der LED-Puck passt nicht in den Boden.' : 'Fassungsloch plus Kragen passt nicht in den Boden.'));
 }
 
 // Hohler Sockel: Wand mit Kabelschlitz, Deckel mit Fassungsloch und Nut, in der der Schirmrand sitzt.
@@ -720,7 +840,7 @@ function buildBase(p, surf, rimThick, warnings) {
   const { S, hNormal, shape, R } = surf;
   const M = Math.max(240, Math.round(p.aufloesung * 1.8));
   const bh = p.sockelHoehe, gap = 0.3, grooveDepth = 1.6;
-  const off = u => { const out = []; for (let i = 0; i < M; i++) { const s = i / M, c = S(s, 0), nh = hNormal(s, 0); out.push([c[0] + nh[0] * u, c[1] + nh[1] * u]); } return out; };
+  const off = (u, cnt = M) => { const out = []; for (let i = 0; i < cnt; i++) { const s = i / cnt, c = S(s, 0), nh = hNormal(s, 0); out.push([c[0] + nh[0] * u, c[1] + nh[1] * u]); } return out; };
 
   // Bei Kissen-Etagen ist der Schirm unten eingeschnürt: Sockel so breit wie das unterste Kissen
   let belly = 0;
@@ -737,12 +857,15 @@ function buildBase(p, surf, rimThick, warnings) {
   }
   mb.addExtrudedRing(outer, inner, zb, bh);
 
-  // Deckel: außen voll, Nut für den Schirmrand, innen Ausschnitt für das Leuchtmittel
-  const grooveO = off(rimThick / 2 + gap), grooveI = off(-rimThick / 2 - gap);
+  // Deckel: außen voll, Nut für den Schirmrand, innen Ausschnitt für das Leuchtmittel.
+  // Alle Deckelumrisse werden an denselben Winkeln abgetastet, inklusive der exakten Ecken des Ausschnitts.
   const ins = insertSpec(p, R(0));
-  const L = insertLoops(p, ins, grooveI.map(([x, y]) => Math.atan2(y, x)));
+  const angs = insertAngles(p, ins, insertRects(p, ins));
+  const outerA = polarSample(off(uOut, 1024), angs);
+  const grooveO = polarSample(off(rimThick / 2 + gap, 1024), angs), grooveI = polarSample(off(-rimThick / 2 - gap, 1024), angs);
+  const L = insertLoops(p, ins, angs);
   const zDeck = bh - p.sockelDeck;
-  mb.addExtrudedRing(outer, grooveO, zDeck, bh);
+  mb.addExtrudedRing(outerA, grooveO, zDeck, bh);
   mb.addExtrudedRing(grooveO, grooveI, zDeck, bh - grooveDepth);
   mb.addExtrudedRing(grooveI, L.cut, zDeck, bh);
 
@@ -755,27 +878,51 @@ function buildBase(p, surf, rimThick, warnings) {
 
   // Passt der Ausschnitt in den Deckel?
   if (grooveI.some(([x, y], i) => Math.hypot(...L.cut[i]) + 3 > Math.hypot(x, y)))
-    warnings.push(ins.kind === 'panel' ? 'Das LED-Panel ist zu groß für den Sockeldeckel. Panel kleiner wählen oder den Schirm unten breiter machen.'
-      : ins.kind === 'puck' ? 'Der LED-Puck ist zu groß für den Sockeldeckel.' : 'Das Fassungsloch ist zu groß für den Sockeldeckel.');
+    warnings.push(W('passtSockel', ins.kind === 'panel' ? 'Das LED-Panel ist zu groß für den Sockeldeckel. Panel kleiner wählen oder den Schirm unten breiter machen.'
+      : ins.kind === 'puck' ? 'Der LED-Puck ist zu groß für den Sockeldeckel.' : 'Das Fassungsloch ist zu groß für den Sockeldeckel.'));
   return mb;
 }
 
-// Ausschnitt für das Leuchtmittel: halbe Breite/Länge, Eckenradius, Einlasstiefe, Auflagekante (0,2 mm Spiel je Seite)
+// Leuchtmittel und seine Umrisse. „item“ ist das echte Teil (Panel/Puck) in Nennmaß, „cut“ der Einlass
+// mit Passungsspiel je Seite, „ledge“ die Öffnung innerhalb der Auflagekante, „frame“ die Außenkante des Rahmens.
 function insertSpec(p, r0) {
+  const mk = (kind, item, depth, ledge) => {
+    const cut = grow(item, p.spiel);
+    return { kind, item, cut, ledge: grow(item, -ledge), frame: grow(cut, 2.4), hx: cut.hx, hy: cut.hy, rr: cut.rr, depth, ledgeW: ledge };
+  };
   if (!p.fassung || (p.fassungPos !== 'sockel' && p.fassungPos !== 'boden')) {
     const r = Math.min(15, r0 * 0.3);
-    return { kind: 'kabel', hx: r, hy: r, rr: r, depth: 0, ledge: 0 };
+    return { ...mk('kabel', rrect(r, r, r), 0, 0), cut: rrect(r, r, r), hx: r, hy: r, rr: r };
   }
+  // Mit Diffusor wird der Einlass um dessen Stärke tiefer, damit er bündig auf dem Panel im Einlass liegt
+  const extra = p.diffusor ? p.diffusorDicke : 0;
   if (p.einsatz === 'puck') {
-    const r = p.puckD / 2 + 0.2;
-    return { kind: 'puck', hx: r, hy: r, rr: r, depth: p.einsatzTiefe, ledge: p.falz };
+    const r = p.puckD / 2;
+    return mk('puck', rrect(r, r, r), p.einsatzTiefe + extra, p.falz);
   }
-  if (p.einsatz === 'panel') {
-    const hx = p.panelB / 2 + 0.2, hy = p.panelL / 2 + 0.2;
-    return { kind: 'panel', hx, hy, rr: Math.min(p.panelEcke, hx, hy), depth: p.einsatzTiefe, ledge: p.falz };
-  }
+  if (p.einsatz === 'panel')
+    return mk('panel', rrect(p.panelB / 2, p.panelL / 2, p.panelEcke), p.einsatzTiefe + extra, p.falz);
   const r = p.lochD / 2;
-  return { kind: 'fassung', hx: r, hy: r, rr: r, depth: 0, ledge: 0 };
+  return { ...mk('fassung', rrect(r, r, r), 0, 0), cut: rrect(r, r, r), hx: r, hy: r, rr: r };
+}
+
+// Diffusor über Puck oder Panel, in Druckrichtung aufgebaut: Deckfläche liegt auf dem Druckbett (z = 0).
+// Er hat genau das Nennmaß des Panels bzw. Pucks und damit dasselbe Spiel zum Einlass wie das Panel selbst.
+// Flach: Platte, die bündig im Einlass auf dem Panel liegt. Haube: offener Kasten, dessen Wand im Einlass
+// auf dem Panelrand steht; die Deckfläche liegt diffusorHoehe über dem Deckel.
+function buildDiffuser(p, ins) {
+  const mb = new MeshBuilder();
+  const item = ins.item, t = p.diffusorDicke;
+  const inner = grow(item, -p.diffusorWand);
+  const angs = insertAngles(p, ins, [item, inner]);
+  const outer = rectLoop(item, angs);
+  let height = t;
+  mb.addPlate(outer, 0, t);
+  if (p.diffusorForm === 'haube') {
+    height = t + p.diffusorHoehe;
+    mb.addExtrudedRing(outer, rectLoop(inner, angs), 0, height);
+  }
+  return { mb, height, width: 2 * item.hx, length: 2 * item.hy };
 }
 
 // Abstand vom Mittelpunkt zum Rand eines abgerundeten Rechtecks in Richtung a
@@ -879,6 +1026,12 @@ const ledPanel = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), ledMaterial);
 const ledPuck = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 64), ledMaterial);
 ledPuck.rotation.x = Math.PI / 2;
 lampGroup.add(ledPanel, ledPuck);
+// Diffusor: in Druckrichtung gebaut (Deckfläche unten), für die Vorschau umgedreht
+const diffMaterial = new THREE.MeshStandardMaterial({ color: 0xfbf8f2, roughness: 0.9, transparent: true, opacity: 0.82 });
+const diffMesh = new THREE.Mesh(new THREE.BufferGeometry(), diffMaterial);
+diffMesh.rotation.x = Math.PI;
+diffMesh.receiveShadow = true;
+lampGroup.add(diffMesh);
 
 let night = false;
 let exploded = false;
@@ -928,7 +1081,13 @@ function applyScene() {
   ledPuck.visible = led === 'puck';
   ledPanel.scale.set(P.panelB, P.panelL, ledT);
   ledPuck.scale.set(P.puckD / 2, ledT, P.puckD / 2);
-  ledPanel.position.z = ledPuck.position.z = inFloor ? P.bodenDicke + ledT / 2 : s.baseH - ledT / 2;
+  // Mit Diffusor liegt das Panel im Sockel um dessen Stärke tiefer
+  const dd = current.diffuser ? P.diffusorDicke : 0;
+  const ledTop = inFloor ? P.bodenDicke + ledT : s.baseH - dd;
+  ledPanel.position.z = ledPuck.position.z = ledTop - ledT / 2;
+  if (current.diffuser) diffMesh.position.z = ledTop + current.diffuser.height;
+  diffMaterial.emissive.set(night ? 0xffe2b8 : 0x000000);
+  diffMaterial.emissiveIntensity = night ? 0.9 : 0;
   ledMaterial.emissive.set(night ? 0xfff1d6 : 0x000000);
   material.emissive.set(night ? P.farbe : 0x000000).multiplyScalar(night ? 0.3 : 1); // Filament leuchtet durch
   controls.maxDistance = night ? roomR * 0.92 : size * 10;
@@ -983,6 +1142,7 @@ function doRebuild() {
   current = buildLampshade(P);
   setGeometry(shade, current);
   setGeometry(baseMesh, current.base);
+  setGeometry(diffMesh, current.diffuser);
   material.color.set(P.farbe);
   baseMaterial.color.set(P.farbe).multiplyScalar(0.82);
   applyScene();
@@ -990,9 +1150,12 @@ function doRebuild() {
   renderStats();
   syncHash();
   document.getElementById('btnStlBase').hidden = !current.base;
+  document.getElementById('btnStlDiff').hidden = !current.diffuser;
   document.getElementById('btnExplode').hidden = !current.base;
   busy.classList.remove('show');
 }
+
+const fmt = v => (Math.round(v * 100) / 100).toLocaleString('de-DE', { maximumFractionDigits: 2 });
 
 function renderStats() {
   const s = current.stats;
@@ -1000,14 +1163,179 @@ function renderStats() {
   const rows = [
     ['Höhe', (s.H + s.baseH).toFixed(0) + ' mm' + (s.baseH ? ` (Schirm ${s.H.toFixed(0)})` : '')],
     ['Breite × Tiefe', `${s.width.toFixed(0)} × ${s.depth.toFixed(0)} mm`],
-    ['Druckteile', s.baseH ? '2 (Schirm + Sockel)' : '1 (Schirm)'],
+    ['Druckteile', ['Schirm', s.baseH && 'Sockel', current.diffuser && 'Diffusor'].filter(Boolean).join(' + ')],
     ['Dreiecke', s.tris.toLocaleString('de-DE')],
     ['Filament (PLA)', 'ca. ' + grams.toFixed(0) + ' g'],
+    ...(current.insert ? [['Einlass', `${fmt(current.insert.w)} × ${fmt(current.insert.l)} × ${fmt(current.insert.depth)} mm`]] : []),
+    ...(current.diffuser ? [['Diffusor', `${fmt(current.diffuser.width)} × ${fmt(current.diffuser.length)} × ${fmt(current.diffuser.height)} mm`]] : []),
   ];
   document.getElementById('statsList').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+  const fixable = current.warnings.filter(w => w.code && FIXES[w.code]);
   document.getElementById('warnings').innerHTML = current.warnings
-    .map(w => typeof w === 'string' ? `<li>${w}</li>` : `<li class="ok">${w.ok}</li>`).join('');
+    .map(w => w.ok ? `<li class="ok">${w.ok}</li>`
+      : `<li><span>${w.text}</span>${FIXES[w.code] ? `<button class="fix" data-code="${w.code}">Korrigieren</button>` : ''}</li>`).join('')
+    + (fixable.length > 1 ? `<li class="fix-all"><button class="fix" data-code="*">Alles korrigieren</button></li>` : '');
 }
+
+/* =====================================================================
+   Automatische Korrektur
+   Jede Korrektur ändert nur die Werte, die das Problem verursachen, und so wenig wie nötig
+   (binäre Suche). Danach wird geprüft, ob die Warnung weg ist und keine neue entstanden ist.
+   ===================================================================== */
+const ITEM = Object.fromEntries(ITEMS.map(i => [i.k, i]));
+const snap = (k, v) => {
+  const it = ITEM[k];
+  return Math.min(it.max, Math.max(it.min, +(Math.round(v / it.step) * it.step).toFixed(4)));
+};
+const tick = () => new Promise(r => setTimeout(r, 0));
+
+// Schnelle Prüfung mit wenigen Strängen: Passungen, Speichen und Überhang hängen nicht von der Strangzahl ab
+function codesOf(p) {
+  const r = buildLampshade({ ...p, straenge: 4, aufloesung: 40 });
+  return new Set(r.warnings.filter(w => w.code && w.code !== 'dreiecke').map(w => w.code));
+}
+
+function estimateTris(p) {
+  const per = (WEBART[p.webart] || WEBART.leinwand).length;
+  const weaveOn = p.muster === 'geflecht' && p.drehung > 0 && p.webTiefe > 0;
+  const n = weaveOn ? Math.ceil(p.straenge / per) * per : p.straenge;
+  const dirs = p.muster === 'keine' ? 0 : p.muster === 'geflecht' && p.drehung > 0 ? 2 : 1;
+  const crossings = weaveOn ? 2 * p.drehung * n : 0;
+  const segs = Math.min(1600, Math.max(20, Math.round(p.aufloesung * Math.max(1, p.drehung * 1.5)), Math.ceil(crossings * 3)));
+  return dirs * n * (segs * 8 + 4) + p.rippen * (p.aufloesung * 8 + 4) + 150000;
+}
+
+// Wert k zwischen dem aktuellen (schlecht) und limit (gut) so wenig wie möglich verschieben, bis good(q) gilt.
+// Reicht auch limit nicht, bleibt limit stehen und die nächste Stellschraube ist dran.
+async function nudge(q, k, limit, good) {
+  const from = q[k], to = snap(k, limit);
+  if (from === to) return good(q);
+  q[k] = to;
+  if (!good(q)) return false;
+  let lo = from, hi = to;
+  for (let i = 0; i < 12; i++) {
+    const mid = snap(k, (lo + hi) / 2);
+    if (mid === lo || mid === hi) break;
+    q[k] = mid;
+    if (good(q)) hi = mid; else lo = mid;
+    await tick();
+  }
+  q[k] = hi;
+  return true;
+}
+
+async function fixOverhang(p) {
+  const q = { ...p }, target = OVERHANG_MAX - 1.5;
+  const good = x => measureOverhang(x, 64, 360) <= target;
+  if (good(q)) return q;
+  // Reihenfolge: zuerst was den Look am wenigsten verändert
+  const steps = [
+    ['drehung', Math.max(0.1, p.drehung * 0.5)], ['verdrehung', 0], ['wellenAmp', 0],
+    ['kanteUnten', 0], ['kanteOben', 0], ['prallheit', 0], ['rillenAmp', 0],
+    ['drehung', 0.1], ['bauch', 0], ['hoehe', 400],
+  ];
+  for (const [k, lim] of steps) if (await nudge(q, k, lim, good)) break;
+  return q;
+}
+
+// Schirm unten (bzw. an der Fassung) vergrößern, bis das Leuchtmittel passt; bei geradem Schirm beide Radien
+async function fixByRadius(p, code, which = 'radiusUnten') {
+  const q = { ...p };
+  const straight = Math.abs(q.radiusOben - q.radiusUnten) < 0.5;
+  const setR = (x, v) => { x[which] = v; if (straight) x[which === 'radiusUnten' ? 'radiusOben' : 'radiusUnten'] = v; };
+  const good = x => !codesOf(x).has(code);
+  const from = q[which], lim = ITEM[which].max;
+  setR(q, lim);
+  if (!good(q)) return q;
+  let lo = from, hi = lim;
+  for (let i = 0; i < 10 && hi - lo > 0.5; i++) {
+    const mid = snap(which, (lo + hi) / 2);
+    setR(q, mid);
+    if (good(q)) hi = mid; else lo = mid;
+    await tick();
+  }
+  setR(q, snap(which, Math.ceil(hi)));
+  return q;
+}
+
+async function fixSpokes(p) {
+  let q = { ...p };
+  const good = x => !codesOf(x).has('speichen');
+  if (await nudge(q, 'fassRing', 2, good)) return q;
+  return fixByRadius(q, 'speichen', q.fassungPos === 'oben' ? 'radiusOben' : 'radiusUnten');
+}
+
+async function fixTris(p) {
+  const q = { ...p };
+  const good = x => estimateTris(x) <= TRIS_MAX * 0.95;
+  if (await nudge(q, 'aufloesung', 80, good)) return q;
+  // Weniger, dafür breitere Stränge, damit die Lampe gleich dicht bleibt
+  const n0 = q.straenge, b0 = q.strangBreite;
+  await nudge(q, 'straenge', 20, good);
+  q.strangBreite = snap('strangBreite', Math.min(10, b0 * n0 / q.straenge));
+  return q;
+}
+
+const FIXES = {
+  ueberhang: fixOverhang,
+  web: async p => ({ ...p, webTiefe: snap('webTiefe', Math.max(0, Math.floor((p.strangTiefe / 2 - 0.05) / 0.05) * 0.05)) }),
+  fein: async p => ({ ...p, strangBreite: Math.max(p.strangBreite, 1.2), strangTiefe: Math.max(p.strangTiefe, 1) }),
+  lose: async p => ({ ...p, rippen: 12 }),
+  sockelFehlt: async p => ({ ...p, sockel: true }),
+  einsatzPos: async p => ({ ...p, fassungPos: p.sockel ? 'sockel' : 'boden' }),
+  diffusor: async p => ({ ...p, diffusorDicke: 1 }),
+  dreiecke: fixTris,
+  speichen: fixSpokes,
+  passtBoden: p => fixByRadius(p, 'passtBoden'),
+  passtSockel: p => fixByRadius(p, 'passtSockel'),
+};
+
+// Korrigiert die gewünschten Warnungen und danach alles, was dadurch neu rot geworden ist
+async function runFix(code) {
+  const before = new Set(current.warnings.filter(w => w.code).map(w => w.code));
+  let q = { ...P };
+  const todo = code === '*' ? [...before] : [code];
+  for (let pass = 0; pass < 4 && todo.length; pass++) {
+    for (const c of todo.splice(0)) if (FIXES[c]) { q = await FIXES[c](q); await tick(); }
+    const now = codesOf(q);
+    if (estimateTris(q) > TRIS_MAX) now.add('dreiecke');
+    // Neu entstandene Probleme gleich mit beheben; bei „Alles“ auch die noch offenen
+    for (const c of now) if ((code === '*' || !before.has(c)) && FIXES[c]) todo.push(c);
+  }
+  return q;
+}
+
+function describeChanges(a, b) {
+  const out = [];
+  for (const it of ITEMS) {
+    if (a[it.k] === b[it.k]) continue;
+    const show = v => it.type === 'select' ? it.opts.find(o => o[0] === v)?.[1] ?? v
+      : it.type === 'check' ? (v ? 'an' : 'aus') : `${fmt(v)}${it.u ? ' ' + it.u : ''}`;
+    out.push(`${it.l}: ${show(a[it.k])} → ${show(b[it.k])}`);
+  }
+  return out;
+}
+
+document.getElementById('warnings').addEventListener('click', async e => {
+  const btn = e.target.closest('button.fix');
+  if (!btn) return;
+  document.querySelectorAll('button.fix').forEach(b => b.disabled = true);
+  busy.textContent = 'Korrigiere …';
+  busy.classList.add('show');
+  await tick();
+  const old = { ...P };
+  const q = await runFix(btn.dataset.code);
+  const changes = describeChanges(old, q);
+  busy.textContent = 'Berechne …';
+  if (changes.length) {
+    applyAll(q);
+    toast('Korrigiert: ' + changes.join(' · '), 6000);
+  } else {
+    busy.classList.remove('show');
+    toast('Keine automatische Korrektur gefunden. Bitte von Hand anpassen.', 4000);
+    renderStats();
+  }
+});
 
 /* =====================================================================
    Bedienfeld
@@ -1097,7 +1425,9 @@ function updateEnabled() {
   if (P.muster !== 'geflecht') off.add('webart');
   if (!inBase || P.einsatz !== 'puck') off.add('puckD');
   if (!inBase || P.einsatz !== 'panel') ['panelB', 'panelL', 'panelEcke'].forEach(k => off.add(k));
-  if (!inBase || P.einsatz === 'fassung') ['einsatzTiefe', 'falz'].forEach(k => off.add(k));
+  if (!inBase || P.einsatz === 'fassung') ['einsatzTiefe', 'falz', 'spiel', 'diffusor', 'diffusorForm', 'diffusorDicke', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
+  if (!P.diffusor) ['diffusorForm', 'diffusorDicke', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
+  if (P.diffusorForm !== 'haube') ['diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
   if (inBase && P.einsatz !== 'fassung') ['fassungTyp', 'lochD'].forEach(k => off.add(k));
   if (P.rillenForm !== 'kissen') off.add('prallheit');
   if (P.rillenAmp === 0) off.add('prallheit');
@@ -1166,10 +1496,10 @@ function randomize() {
 }
 
 /* ---------- Buttons ---------- */
-const toast = msg => {
+const toast = (msg, ms = 2200) => {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 2200);
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), ms);
 };
 
 const presetBox = document.getElementById('presets');
@@ -1202,6 +1532,13 @@ document.getElementById('btnStl').onclick = () => {
   const flip = P.fassung && P.fassungPos === 'oben' && P.druckUmdrehen;
   const name = `lampenschirm_${fileBase()}.stl`;
   download(toSTL(current.positions, current.indices, flip, current.stats.H), name, 'model/stl');
+  toast('STL gespeichert: ' + name);
+};
+document.getElementById('btnStlDiff').onclick = () => {
+  if (!current.diffuser) return;
+  // Deckfläche liegt auf dem Druckbett; am besten in Weiß oder Natur und mit 100 % Füllung drucken
+  const name = `diffusor_${P.einsatz}_${fileBase()}.stl`;
+  download(toSTL(current.diffuser.positions, current.diffuser.indices, false, 0), name, 'model/stl');
   toast('STL gespeichert: ' + name);
 };
 document.getElementById('btnStlBase').onclick = () => {
