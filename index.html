@@ -183,17 +183,26 @@ const SCHEMA = [
     { k: 'radiusOben', l: 'Radius oben', min: 20, max: 200, step: 1, def: 60, u: 'mm' },
     { k: 'bauch', l: 'Wölbung', min: -80, max: 80, step: 1, def: 20, u: 'mm' },
     { k: 'bauchPos', l: 'Wölbung Position', min: 0.1, max: 0.9, step: 0.01, def: 0.5, u: '' },
-    { k: 'rillenAmp', l: 'Rillen Tiefe', min: 0, max: 20, step: 0.5, def: 0, u: 'mm' },
-    { k: 'rillenAnzahl', l: 'Rillen Anzahl', min: 1, max: 12, step: 1, def: 4, u: '' },
+    { k: 'rillenForm', l: 'Rillen / Etagen', type: 'select', def: 'welle', opts: [
+      ['welle', 'Wellen-Rillen'], ['kissen', 'Kissen-Etagen (gestapelt)']] },
+    { k: 'rillenAmp', l: 'Tiefe', min: 0, max: 30, step: 0.5, def: 0, u: 'mm' },
+    { k: 'rillenAnzahl', l: 'Anzahl', min: 1, max: 12, step: 1, def: 4, u: '' },
+    { k: 'prallheit', l: 'Prallheit der Kissen', min: 0, max: 1, step: 0.01, def: 0.55, u: '' },
+    { k: 'kanteUnten', l: 'Kante unten abrunden', min: 0, max: 30, step: 0.5, def: 0, u: 'mm' },
+    { k: 'kanteOben', l: 'Kante oben abrunden', min: 0, max: 30, step: 0.5, def: 0, u: 'mm' },
   ]},
   { group: 'Querschnitt & Verdrehung', open: true, items: [
     { k: 'querschnitt', l: 'Querschnitt', type: 'select', def: '0', opts: [
       ['0', 'Rund'], ['3', 'Dreieck (abgerundet)'], ['4', 'Viereck (abgerundet)'], ['5', 'Fünfeck (abgerundet)'],
       ['6', 'Sechseck (abgerundet)'], ['8', 'Achteck (abgerundet)']] },
     { k: 'eckigkeit', l: 'Eckigkeit', min: 2.2, max: 16, step: 0.1, def: 5, u: '' },
+    { k: 'seitenVerhaeltnis', l: 'Seitenverhältnis (Tiefe : Breite)', min: 0.5, max: 2, step: 0.01, def: 1, u: '' },
     { k: 'verdrehung', l: 'Verdrehung über die Höhe', min: -180, max: 180, step: 1, def: 0, u: '°' },
     { k: 'verdrehVerlauf', l: 'Verlauf der Verdrehung', type: 'select', def: 'linear', opts: [
-      ['linear', 'Gleichmäßig'], ['s', 'S-Kurve (sanfter Anfang und Ende)'], ['welle', 'Hin und zurück']] },
+      ['linear', 'Gleichmäßig'], ['s', 'S-Kurve (sanfter Anfang und Ende)'], ['welle', 'Hin und zurück'],
+      ['lokal', 'Falte (auf eine Zone konzentriert)']] },
+    { k: 'verdrehMitte', l: 'Falte: Höhe', min: 0.1, max: 0.9, step: 0.01, def: 0.4, u: '' },
+    { k: 'verdrehBreite', l: 'Falte: Breite', min: 0.05, max: 0.6, step: 0.01, def: 0.2, u: '' },
   ]},
   { group: 'Geflecht', open: true, items: [
     { k: 'muster', l: 'Muster', type: 'select', def: 'geflecht', opts: [
@@ -202,6 +211,8 @@ const SCHEMA = [
     { k: 'drehung', l: 'Drehung', min: 0, max: 2.5, step: 0.01, def: 0.34, u: 'U' },
     { k: 'strangBreite', l: 'Strangbreite', min: 0.8, max: 10, step: 0.1, def: 2.4, u: 'mm' },
     { k: 'strangTiefe', l: 'Strangstärke', min: 0.6, max: 6, step: 0.1, def: 1.6, u: 'mm' },
+    { k: 'webart', l: 'Webart', type: 'select', def: 'leinwand', opts: [
+      ['leinwand', 'Leinwand (1 über, 1 unter)'], ['koeper22', 'Köper 2/2 (Diagonalrippen)'], ['koeper21', 'Köper 2/1']] },
     { k: 'webTiefe', l: 'Webversatz (über/unter)', min: 0, max: 3, step: 0.05, def: 0.5, u: 'mm' },
     { k: 'wellenAmp', l: 'Wellen Ausschlag', min: 0, max: 20, step: 0.5, def: 0, u: '°' },
     { k: 'wellenFreq', l: 'Wellen Anzahl', min: 1, max: 16, step: 1, def: 4, u: '' },
@@ -212,10 +223,22 @@ const SCHEMA = [
     { k: 'randHoehe', l: 'Randhöhe', min: 0, max: 20, step: 0.5, def: 5, u: 'mm' },
     { k: 'randDicke', l: 'Randstärke', min: 1, max: 10, step: 0.1, def: 2.8, u: 'mm' },
   ]},
-  { group: 'Fassung', items: [
-    { k: 'fassung', l: 'Fassungshalter', type: 'check', def: true },
+  { group: 'Leuchtmittel & Fassung', items: [
+    { k: 'fassung', l: 'Halter für Leuchtmittel', type: 'check', def: true },
     { k: 'fassungPos', l: 'Position', type: 'select', def: 'oben', opts: [
-      ['oben', 'Im Schirm oben (Pendelleuchte)'], ['unten', 'Im Schirm unten (Tischleuchte)'], ['sockel', 'Im Sockel']] },
+      ['oben', 'Speichen oben im Schirm (Pendelleuchte)'], ['unten', 'Speichen unten im Schirm'],
+      ['boden', 'Boden im Schirm (Tischleuchte)'], ['sockel', 'Im Sockel']] },
+    { k: 'einsatz', l: 'Leuchtmittel', type: 'select', def: 'fassung', opts: [
+      ['fassung', 'Lampenfassung (E27/E14/GU10)'], ['puck', 'LED-Puck (rund)'], ['panel', 'LED-Panel (rechteckig)']] },
+    { k: 'bodenDicke', l: 'Bodenstärke', min: 1.2, max: 6, step: 0.1, def: 2.4, u: 'mm' },
+    { k: 'kragen', l: 'Kragen um die Fassung', min: 0, max: 20, step: 0.5, def: 6, u: 'mm' },
+    { k: 'nasen', l: 'Aussparungen im Fassungsloch', min: 0, max: 6, step: 1, def: 0, u: '' },
+    { k: 'puckD', l: 'Puck-Durchmesser', min: 30, max: 180, step: 0.5, def: 70, u: 'mm' },
+    { k: 'panelB', l: 'Panel-Breite', min: 20, max: 240, step: 0.5, def: 120, u: 'mm' },
+    { k: 'panelL', l: 'Panel-Länge', min: 20, max: 240, step: 0.5, def: 160, u: 'mm' },
+    { k: 'panelEcke', l: 'Panel-Eckenradius', min: 0, max: 30, step: 0.5, def: 3, u: 'mm' },
+    { k: 'einsatzTiefe', l: 'Einlasstiefe (Dicke)', min: 0, max: 25, step: 0.5, def: 8, u: 'mm' },
+    { k: 'falz', l: 'Auflagekante', min: 1, max: 12, step: 0.5, def: 3, u: 'mm' },
     { k: 'fassungTyp', l: 'Fassungstyp', type: 'select', def: 'e27', opts: [
       ['e27', 'E27 (Loch ca. 42 mm)'], ['e14', 'E14 (Loch ca. 29 mm)'], ['gu10', 'GU10 (Loch ca. 36 mm)'], ['frei', 'Eigenes Maß']] },
     { k: 'lochD', l: 'Lochdurchmesser', min: 15, max: 80, step: 0.5, def: 42, u: 'mm' },
@@ -252,8 +275,40 @@ const MESH_LAMPE = {
   sockel: true, sockelHoehe: 70, sockelUeberstand: 3, farbe: '#d97a2b',
 };
 
+// Nachbau der gestapelten Kissen-Lampe
+const KISSEN = {
+  ...MESH_LAMPE, hoehe: 250, radiusUnten: 84, radiusOben: 72, bauch: 0, eckigkeit: 3.2, verdrehung: 0,
+  rillenForm: 'kissen', rillenAnzahl: 4, rillenAmp: 10, prallheit: 0.2, drehung: 0.28, webTiefe: 0.25,
+  randHoehe: 3, sockelHoehe: 55, sockelUeberstand: 1, einsatz: 'puck', puckD: 70, einsatzTiefe: 8, farbe: '#e0863a',
+};
+
+// Nachbau „Woven Light Mesh“ nach den Slicer-Ansichten: dichtes Leinwandgeflecht, verdrehte Falte unten,
+// abgerundete Kanten, Boden im Schirm mit Kragen und Aussparungen für die E27-Fassung
+const WOVEN_LIGHT = {
+  hoehe: 240, radiusUnten: 80, radiusOben: 80, bauch: -3, bauchPos: 0.4,
+  querschnitt: '4', eckigkeit: 4.2, seitenVerhaeltnis: 1,
+  verdrehung: 30, verdrehVerlauf: 'lokal', verdrehMitte: 0.38, verdrehBreite: 0.2,
+  kanteUnten: 8, kanteOben: 10,
+  muster: 'geflecht', webart: 'leinwand', straenge: 150, drehung: 0.36,
+  strangBreite: 2, strangTiefe: 1.2, webTiefe: 0.45,
+  randHoehe: 2.5, randDicke: 2.2,
+  fassung: true, fassungPos: 'boden', einsatz: 'fassung', fassungTyp: 'e27', lochD: 42,
+  bodenDicke: 2.4, kragen: 6, nasen: 4, fassRing: 8,
+  sockel: false, farbe: '#eee4da',
+};
+
+// Gleiche Lampe für das LED-Panel 120 × 160 mm: Querschnitt gestreckt, Panel liegt im Rahmen auf dem Boden
+const WOVEN_PANEL = {
+  ...WOVEN_LIGHT, radiusUnten: 86, radiusOben: 86, seitenVerhaeltnis: 1.3, straenge: 176, drehung: 0.26,
+  einsatz: 'panel', panelB: 120, panelL: 160, panelEcke: 2, einsatzTiefe: 4, falz: 4,
+};
+
 const PRESETS = {
+  'Woven Light': WOVEN_LIGHT,
+  'Woven Light · Panel 120×160': WOVEN_PANEL,
   'Mesh Tischlampe': MESH_LAMPE,
+  'Kissen-Stapel': KISSEN,
+  'Mesh mit LED-Panel': { ...MESH_LAMPE, einsatz: 'panel', panelB: 90, panelL: 90, panelEcke: 3, einsatzTiefe: 3 },
   'Mesh Kelch': { ...MESH_LAMPE, hoehe: 210, radiusUnten: 52, radiusOben: 82, bauch: -4, bauchPos: 0.35,
     verdrehung: 35, verdrehVerlauf: 's', drehung: 0.3, sockelHoehe: 60 },
   'Woven Mesh': {},
@@ -345,28 +400,44 @@ class MeshBuilder {
 
 function makeProfile(p) {
   const H = p.hoehe;
+  // Abgerundete Kante: Kreisbogen, aber nur bis 35° Neigung. Diagonale Stränge liegen darauf noch steiler,
+  // mit 35° bleiben sie bei etwa 55° und damit ohne Stützen druckbar.
+  const EDGE = 35 * Math.PI / 180;
+  const edge = (z, r) => {
+    if (r <= 0) return 0;
+    const h = r * Math.sin(EDGE);
+    if (z >= h) return 0;
+    const d = h - z;
+    return r - Math.sqrt(r * r - d * d);
+  };
   const R = t => {
     const lin = p.radiusUnten + (p.radiusOben - p.radiusUnten) * t;
     const q = p.bauchPos;
     const bump = t < q ? Math.sin(Math.PI / 2 * t / q) ** 2 : Math.sin(Math.PI / 2 * (1 - t) / (1 - q)) ** 2;
-    return Math.max(8, lin + p.bauch * bump + p.rillenAmp * Math.sin(p.rillenAnzahl * 2 * Math.PI * t));
+    // Kissen: n Etagen, dazwischen eingeschnürt; kleiner Exponent = prallere, flachere Kissen
+    const rillen = p.rillenForm === 'kissen'
+      ? p.rillenAmp * (Math.pow(Math.abs(Math.sin(p.rillenAnzahl * Math.PI * t)), 1 - 0.85 * p.prallheit) - 1)
+      : p.rillenAmp * Math.sin(p.rillenAnzahl * 2 * Math.PI * t);
+    const kanten = edge(t * H, p.kanteUnten) + edge((1 - t) * H, p.kanteOben);
+    return Math.max(8, lin + p.bauch * bump + rillen - kanten);
   };
   return { H, R };
 }
 
 // Querschnitt als Superformel: n Ecken, Exponent m (2 = Kreis, groß = scharfe Ecken).
-// Der Radius-Parameter entspricht dem Abstand zur Seitenmitte.
+// Der Radius-Parameter ist der Abstand zur Seitenmitte in x; in y wird er mit dem Seitenverhältnis gestreckt.
 function makeShape(p) {
-  const n = parseInt(p.querschnitt, 10) || 0, m = p.eckigkeit;
+  const n = parseInt(p.querschnitt, 10) || 0, m = p.eckigkeit, asp = p.seitenVerhaeltnis;
   const rho = n === 0 ? () => 1
     : phi => Math.pow(Math.abs(Math.cos(n * phi / 4)) ** m + Math.abs(Math.sin(n * phi / 4)) ** m, -1 / m);
+  const local = phi => { const r = rho(phi); return [r * Math.cos(phi), asp * r * Math.sin(phi)]; };
   // Tabelle Bogenlänge -> Winkel, damit Stränge auch an den Ecken gleichmäßig verteilt sind
   const K = 2048, cum = new Float64Array(K + 1);
-  let px = rho(0), py = 0, maxRho = 1;
+  let [px, py] = local(0), maxRho = Math.hypot(px, py);
   for (let k = 1; k <= K; k++) {
-    const a = 2 * Math.PI * k / K, r = rho(a), x = r * Math.cos(a), y = r * Math.sin(a);
+    const [x, y] = local(2 * Math.PI * k / K);
     cum[k] = cum[k - 1] + Math.hypot(x - px, y - py);
-    px = x; py = y; maxRho = Math.max(maxRho, r);
+    px = x; py = y; maxRho = Math.max(maxRho, Math.hypot(x, y));
   }
   const total = cum[K];
   const phiOfS = s => {
@@ -376,19 +447,27 @@ function makeShape(p) {
     const f = (target - cum[lo]) / ((cum[hi] - cum[lo]) || 1);
     return 2 * Math.PI * (lo + f) / K;
   };
-  return { rho, phiOfS, maxRho, perimeterUnit: total };
+  // Abstand zum Rand in Richtung b (lokales Koordinatensystem, ohne Verdrehung)
+  const radiusDir = b => Math.hypot(...local(Math.atan2(Math.sin(b) / asp, Math.cos(b))));
+  return { local, phiOfS, maxRho, perimeterUnit: total, radiusDir };
 }
 
 function makeSurface(p) {
   const { H, R } = makeProfile(p);
   const shape = makeShape(p);
   const twTotal = p.verdrehung * Math.PI / 180;
-  const twf = p.verdrehVerlauf === 's' ? t => (1 - Math.cos(Math.PI * t)) / 2
-            : p.verdrehVerlauf === 'welle' ? t => Math.sin(Math.PI * t) : t => t;
+  let twf = t => t;
+  if (p.verdrehVerlauf === 's') twf = t => (1 - Math.cos(Math.PI * t)) / 2;
+  else if (p.verdrehVerlauf === 'welle') twf = t => Math.sin(Math.PI * t);
+  else if (p.verdrehVerlauf === 'lokal') {
+    // Verdrehung auf eine Zone konzentriert: erzeugt die schräge Falte wie bei einer verdrehten Papiertüte
+    const g = t => Math.tanh((t - p.verdrehMitte) / p.verdrehBreite), g0 = g(0), g1 = g(1);
+    twf = t => (g(t) - g0) / (g1 - g0);
+  }
   const tw = t => twTotal * twf(t);
   const S = (s, t) => {
-    const phi = shape.phiOfS(s), r = R(t) * shape.rho(phi), a = phi + tw(t);
-    return [r * Math.cos(a), r * Math.sin(a), t * H];
+    const [lx, ly] = shape.local(shape.phiOfS(s)), r = R(t), a = tw(t), c = Math.cos(a), sn = Math.sin(a);
+    return [r * (lx * c - ly * sn), r * (lx * sn + ly * c), t * H];
   };
   const e = 1e-4;
   const normal = (s, t) => {
@@ -400,7 +479,7 @@ function makeSurface(p) {
     const ds = sub(S(s + e, t), S(s - e, t));
     return norm([ds[1], -ds[0], 0]);
   };
-  const radiusAt = (a, t) => R(t) * shape.rho(a - tw(t));
+  const radiusAt = (a, t) => R(t) * shape.radiusDir(a - tw(t));
   return { H, R, S, normal, hNormal, radiusAt, shape };
 }
 
@@ -416,31 +495,50 @@ function frames(Pts, normals) {
   return { T, N, B };
 }
 
+// Webarten: Folge über/unter entlang eines Strangs (Periode = Länge)
+const WEBART = { leinwand: [1, -1], koeper22: [1, 1, -1, -1], koeper21: [1, 1, -1] };
+
 function buildLampshade(p) {
   const mb = new MeshBuilder();
   const surf = makeSurface(p);
   const { H, R, S, normal, hNormal } = surf;
   const waveS = p.wellenAmp / 360;
   const res = p.aufloesung;
-  const n = p.straenge;
   const woven = p.muster === 'geflecht' && p.drehung > 0;
   const weaveOn = woven && p.webTiefe > 0;
+  const pattern = WEBART[p.webart] || WEBART.leinwand, per = pattern.length;
+  // Damit das Muster rundum aufgeht, muss die Strangzahl ein Vielfaches der Periode sein
+  const n = weaveOn ? Math.ceil(p.straenge / per) * per : p.straenge;
+  const pat = k => pattern[((k % per) + per) % per];
   let maxOverhang = 0;
 
-  const strand = (s0, dir, weave) => {
+  const strand = (s0, idx, dir, weave) => {
     const crossings = weave ? 2 * p.drehung * n : 0;
     const segs = Math.min(1600, Math.max(20, Math.round(res * Math.max(1, Math.abs(dir) * p.drehung * 1.5)), Math.ceil(crossings * 3)));
     const pts = [], nrm = [];
+    let prev = null;
     for (let i = 0; i <= segs; i++) {
       const t = i / segs;
       const s = s0 + dir * p.drehung * t + waveS * Math.sin(p.wellenFreq * 2 * Math.PI * t);
       const c = S(s, t), nS = normal(s, t);
-      const off = weave ? dir * p.webTiefe * Math.cos(n * 2 * Math.PI * p.drehung * t) : 0;
+      // Überhang am Strangverlauf ohne Webversatz messen; der Versatz ist nur ein Bruchteil eines Millimeters je Schicht
+      if (prev) {
+        const d = sub(c, prev);
+        maxOverhang = Math.max(maxOverhang, Math.acos(Math.min(1, Math.abs(d[2]) / (len(d) || 1))) * 180 / Math.PI);
+      }
+      prev = c;
+      let off = 0;
+      if (weave) {
+        // k-te Kreuzung entlang des Strangs; zwischen den Kreuzungen weich überblenden
+        const kf = crossings * t, k0 = Math.floor(kf), fr = kf - k0;
+        const v = dir > 0 ? k => pat(k + 2 * idx) : k => -pat(2 * idx - k);
+        const v0 = v(k0), v1 = v(k0 + 1);
+        off = p.webTiefe * (v0 + (v1 - v0) * (1 - Math.cos(Math.PI * fr)) / 2);
+      }
       pts.push([c[0] + nS[0] * off, c[1] + nS[1] * off, c[2] + nS[2] * off]);
       nrm.push(nS);
     }
-    const { T, N, B } = frames(pts, nrm);
-    for (const t of T) maxOverhang = Math.max(maxOverhang, Math.acos(Math.min(1, Math.abs(t[2]))) * 180 / Math.PI);
+    const { N, B } = frames(pts, nrm);
     mb.addTube(pts, N, B, p.strangBreite, p.strangTiefe, false);
   };
 
@@ -462,10 +560,10 @@ function buildLampshade(p) {
     const dirs = p.muster === 'geflecht' ? (p.drehung > 0 ? [1, -1] : [1])
                : p.muster === 'rechts' ? [1] : [-1];
     for (const dir of dirs)
-      for (let i = 0; i < n; i++) strand(i / n, dir, weaveOn);
+      for (let i = 0; i < n; i++) strand(i / n, i, dir, weaveOn);
   }
   // Senkrechte Rippen
-  for (let i = 0; i < p.rippen; i++) strand((i + 0.5) / p.rippen, 0, false);
+  for (let i = 0; i < p.rippen; i++) strand((i + 0.5) / p.rippen, 0, 0, false);
 
   // Zwischenringe
   const ringThick = p.strangTiefe + (weaveOn ? 2 * p.webTiefe : 0);
@@ -478,12 +576,13 @@ function buildLampshade(p) {
   const mount = p.fassung ? p.fassungPos : 'keine';
   const inShade = mount === 'oben' || mount === 'unten';
   const rimThick = Math.max(p.randDicke, ringThick);
-  const rimBottomH = mount === 'unten' ? Math.max(p.randHoehe, p.speichenHoehe) : p.randHoehe;
+  const rimBottomH = mount === 'unten' ? Math.max(p.randHoehe, p.speichenHoehe)
+                   : mount === 'boden' ? Math.max(p.randHoehe, p.bodenDicke) : p.randHoehe;
   const rimTopH = mount === 'oben' ? Math.max(p.randHoehe, p.speichenHoehe) : p.randHoehe;
   if (rimBottomH > 0) ring(rimBottomH / 2 / H, rimBottomH, rimThick);
   if (rimTopH > 0) ring(1 - rimTopH / 2 / H, rimTopH, rimThick);
 
-  // Fassungshalter im Schirm
+  // Fassungshalter mit Speichen im Schirm
   const warnings = [];
   if (inShade) {
     const sh = p.speichenHoehe;
@@ -506,6 +605,9 @@ function buildLampshade(p) {
     }
     if (tooBig) warnings.push('Loch plus Ring ist fast so groß wie der Schirm an dieser Stelle. Einige Speichen fallen weg.');
   }
+
+  // Vollboden im Schirm mit Fassung, Puck oder Panel
+  if (mount === 'boden') buildFloor(mb, p, surf, rimThick, warnings);
 
   // Alles auf 0..H begrenzen (flache Auflageflächen)
   for (let i = 2; i < mb.pos.length; i += 3) mb.pos[i] = Math.min(H, Math.max(0, mb.pos[i]));
@@ -530,6 +632,8 @@ function buildLampshade(p) {
     warnings.push('Kein Geflecht und keine Rippen: Die Ränder hängen lose.');
   if (mount === 'sockel' && !p.sockel)
     warnings.push('Fassung ist „Im Sockel“ eingestellt, der Sockel ist aber aus.');
+  if (p.fassung && p.einsatz !== 'fassung' && mount !== 'sockel' && mount !== 'boden')
+    warnings.push('LED-Puck und LED-Panel gehen nur mit „Boden im Schirm“ oder „Im Sockel“.');
   const tris = (mb.idx.length + (base ? base.idx.length : 0)) / 3;
   if (tris > 1500000)
     warnings.push('Sehr viele Dreiecke. Auflösung oder Strangzahl senken, falls der Slicer langsam wird.');
@@ -540,20 +644,80 @@ function buildLampshade(p) {
     indices: new Uint32Array(mb.idx),
     base: base ? { positions: new Float32Array(base.pos), indices: new Uint32Array(base.idx), height: p.sockelHoehe } : null,
     stats: { H, width: 2 * maxX, depth: 2 * maxY, volume: mb.volume + (base ? base.volume : 0), tris, maxOverhang, maxR,
-      baseH: base ? p.sockelHoehe : 0 },
+      baseH: base ? p.sockelHoehe : 0, strands: n },
     warnings,
   };
+}
+
+// Umrisse für Fassung, Puck oder Panel, abgetastet an den Winkeln angs
+function insertLoops(p, ins, angs) {
+  const loop = (hx, hy, rr) => angs.map(a => { const r = rrectRadius(a, hx, hy, rr); return [r * Math.cos(a), r * Math.sin(a)]; });
+  let cut;
+  if (ins.kind === 'fassung' && p.nasen > 0) {
+    // Loch mit Aussparungen (Nasen der Fassung bzw. Bajonett), je 6 mm breit und 2,5 mm tief
+    const half = 3 / ins.hx;
+    cut = angs.map(a => {
+      let d = Infinity;
+      for (let k = 0; k < p.nasen; k++) {
+        const c = 2 * Math.PI * k / p.nasen + Math.PI / 4;
+        d = Math.min(d, Math.abs(Math.atan2(Math.sin(a - c), Math.cos(a - c))));
+      }
+      const r = ins.hx + (d < half ? 2.5 : 0);
+      return [r * Math.cos(a), r * Math.sin(a)];
+    });
+  } else cut = loop(ins.hx, ins.hy, ins.rr);
+  const f = ins.ledge, w = 2.4;
+  return {
+    cut,
+    ledge: loop(Math.max(2, ins.hx - f), Math.max(2, ins.hy - f), Math.max(0, ins.rr - f)),
+    frame: loop(ins.hx + w, ins.hy + w, ins.rr + w),
+    kragen: loop(ins.hx + p.fassRing, ins.hy + p.fassRing, ins.rr + p.fassRing),
+  };
+}
+
+// Boden im Schirm (wie beim Original): Platte mit Loch, Kragen um die Fassung bzw. Rahmen um Puck/Panel.
+// Wird mit dem Boden auf dem Druckbett gedruckt, alles wächst nach oben.
+function buildFloor(mb, p, surf, rimThick, warnings) {
+  const { S, hNormal } = surf;
+  const M = Math.max(360, Math.round(p.aufloesung * 2.5));
+  const outer = [], innerR = [];
+  for (let i = 0; i < M; i++) {
+    const s = i / M, c = S(s, 0), nh = hNormal(s, 0);
+    outer.push([c[0] + nh[0] * (rimThick / 2 - 0.1), c[1] + nh[1] * (rimThick / 2 - 0.1)]);
+    innerR.push(Math.hypot(c[0] - nh[0] * rimThick / 2, c[1] - nh[1] * rimThick / 2));
+  }
+  const angs = outer.map(([x, y]) => Math.atan2(y, x));
+  const ins = insertSpec(p, surf.R(0));
+  const L = insertLoops(p, ins, angs);
+  const T = p.bodenDicke;
+  let fence = null, fenceH = 0;
+  if (ins.kind === 'fassung') {
+    mb.addExtrudedRing(outer, L.cut, 0, T);
+    if (p.kragen > 0) { fence = L.kragen; fenceH = T + p.kragen; mb.addExtrudedRing(L.kragen, L.cut, 0, fenceH); }
+  } else {
+    // Puck/Panel liegt auf der Auflagekante, der Rahmen hält es seitlich
+    mb.addExtrudedRing(outer, ins.depth > 0 ? L.ledge : L.cut, 0, T);
+    if (ins.depth > 0) { fence = L.frame; fenceH = T + ins.depth; mb.addExtrudedRing(L.frame, L.cut, 0, fenceH); }
+  }
+  const check = fence || L.cut;
+  if (check.some((pt, i) => Math.hypot(...pt) + 1 > innerR[i]))
+    warnings.push(ins.kind === 'panel' ? 'Das LED-Panel passt nicht in den Boden. Radius unten oder Seitenverhältnis vergrößern.'
+      : ins.kind === 'puck' ? 'Der LED-Puck passt nicht in den Boden.' : 'Fassungsloch plus Kragen passt nicht in den Boden.');
 }
 
 // Hohler Sockel: Wand mit Kabelschlitz, Deckel mit Fassungsloch und Nut, in der der Schirmrand sitzt.
 function buildBase(p, surf, rimThick, warnings) {
   const mb = new MeshBuilder();
   const { S, hNormal, shape, R } = surf;
-  const M = Math.max(160, Math.round(p.aufloesung * 1.6));
+  const M = Math.max(240, Math.round(p.aufloesung * 1.8));
   const bh = p.sockelHoehe, gap = 0.3, grooveDepth = 1.6;
   const off = u => { const out = []; for (let i = 0; i < M; i++) { const s = i / M, c = S(s, 0), nh = hNormal(s, 0); out.push([c[0] + nh[0] * u, c[1] + nh[1] * u]); } return out; };
 
-  const uOut = rimThick / 2 + gap + 1.2 + p.sockelUeberstand;
+  // Bei Kissen-Etagen ist der Schirm unten eingeschnürt: Sockel so breit wie das unterste Kissen
+  let belly = 0;
+  if (p.rillenForm === 'kissen' && p.rillenAmp > 0)
+    for (let k = 0; k <= 50; k++) belly = Math.max(belly, R(k / 50 / p.rillenAnzahl) - R(0));
+  const uOut = rimThick / 2 + gap + 1.2 + p.sockelUeberstand + belly;
   const outer = off(uOut), inner = off(uOut - p.sockelWand);
   // Kabelschlitz unten in der Wand, mittig auf der ersten Seite
   const perim = shape.perimeterUnit * R(0);
@@ -564,19 +728,57 @@ function buildBase(p, surf, rimThick, warnings) {
   }
   mb.addExtrudedRing(outer, inner, zb, bh);
 
-  // Deckel: außen voll, Nut für den Schirmrand, innen Loch für die Fassung
+  // Deckel: außen voll, Nut für den Schirmrand, innen Ausschnitt für das Leuchtmittel
   const grooveO = off(rimThick / 2 + gap), grooveI = off(-rimThick / 2 - gap);
-  const holeR = p.fassung && p.fassungPos === 'sockel' ? p.lochD / 2 : Math.min(15, R(0) * 0.3);
-  const hole = outer.map(([x, y]) => { const a = Math.atan2(y, x); return [holeR * Math.cos(a), holeR * Math.sin(a)]; });
+  const ins = insertSpec(p, R(0));
+  const L = insertLoops(p, ins, grooveI.map(([x, y]) => Math.atan2(y, x)));
   const zDeck = bh - p.sockelDeck;
   mb.addExtrudedRing(outer, grooveO, zDeck, bh);
   mb.addExtrudedRing(grooveO, grooveI, zDeck, bh - grooveDepth);
-  mb.addExtrudedRing(grooveI, hole, zDeck, bh);
+  mb.addExtrudedRing(grooveI, L.cut, zDeck, bh);
 
-  let minInner = Infinity;
-  for (const [x, y] of grooveI) minInner = Math.min(minInner, Math.hypot(x, y));
-  if (holeR + 3 > minInner) warnings.push('Das Fassungsloch ist zu groß für den Sockeldeckel.');
+  // Einlass für Puck oder Panel: Rahmen nach unten und umlaufende Auflagekante
+  if (ins.depth > 0) {
+    const depth = Math.min(ins.depth, bh - 6), ledgeT = 1.6;
+    mb.addExtrudedRing(L.frame, L.cut, bh - depth - ledgeT, bh);
+    mb.addExtrudedRing(L.cut, L.ledge, bh - depth - ledgeT, bh - depth);
+  }
+
+  // Passt der Ausschnitt in den Deckel?
+  if (grooveI.some(([x, y], i) => Math.hypot(...L.cut[i]) + 3 > Math.hypot(x, y)))
+    warnings.push(ins.kind === 'panel' ? 'Das LED-Panel ist zu groß für den Sockeldeckel. Panel kleiner wählen oder den Schirm unten breiter machen.'
+      : ins.kind === 'puck' ? 'Der LED-Puck ist zu groß für den Sockeldeckel.' : 'Das Fassungsloch ist zu groß für den Sockeldeckel.');
   return mb;
+}
+
+// Ausschnitt für das Leuchtmittel: halbe Breite/Länge, Eckenradius, Einlasstiefe, Auflagekante (0,2 mm Spiel je Seite)
+function insertSpec(p, r0) {
+  if (!p.fassung || (p.fassungPos !== 'sockel' && p.fassungPos !== 'boden')) {
+    const r = Math.min(15, r0 * 0.3);
+    return { kind: 'kabel', hx: r, hy: r, rr: r, depth: 0, ledge: 0 };
+  }
+  if (p.einsatz === 'puck') {
+    const r = p.puckD / 2 + 0.2;
+    return { kind: 'puck', hx: r, hy: r, rr: r, depth: p.einsatzTiefe, ledge: p.falz };
+  }
+  if (p.einsatz === 'panel') {
+    const hx = p.panelB / 2 + 0.2, hy = p.panelL / 2 + 0.2;
+    return { kind: 'panel', hx, hy, rr: Math.min(p.panelEcke, hx, hy), depth: p.einsatzTiefe, ledge: p.falz };
+  }
+  const r = p.lochD / 2;
+  return { kind: 'fassung', hx: r, hy: r, rr: r, depth: 0, ledge: 0 };
+}
+
+// Abstand vom Mittelpunkt zum Rand eines abgerundeten Rechtecks in Richtung a
+function rrectRadius(a, hx, hy, rr) {
+  const c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
+  let t = Math.min(c > 1e-9 ? hx / c : Infinity, s > 1e-9 ? hy / s : Infinity);
+  const cx = hx - rr, cy = hy - rr;
+  if (rr > 0 && t * c > cx + 1e-9 && t * s > cy + 1e-9) {
+    const b = c * cx + s * cy;
+    t = b + Math.sqrt(Math.max(0, b * b - (cx * cx + cy * cy - rr * rr)));
+  }
+  return t;
 }
 
 /* =====================================================================
@@ -662,6 +864,12 @@ const baseMaterial = new THREE.MeshStandardMaterial({ color: P.farbe, roughness:
 const shade = new THREE.Mesh(new THREE.BufferGeometry(), material);
 const baseMesh = new THREE.Mesh(new THREE.BufferGeometry(), baseMaterial);
 for (const m of [shade, baseMesh]) { m.castShadow = true; m.receiveShadow = true; lampGroup.add(m); }
+// LED-Puck bzw. LED-Panel im Sockeldeckel (nur Vorschau)
+const ledMaterial = new THREE.MeshStandardMaterial({ color: 0xf1ede4, roughness: 0.4 });
+const ledPanel = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), ledMaterial);
+const ledPuck = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 64), ledMaterial);
+ledPuck.rotation.x = Math.PI / 2;
+lampGroup.add(ledPanel, ledPuck);
 
 let night = false;
 let current = null;
@@ -670,7 +878,7 @@ let firstFrame = true;
 function applyScene() {
   const s = current.stats, H = s.H, totalH = H + s.baseH;
   const size = Math.max(totalH, s.width, s.depth);
-  const lift = night && !s.baseH ? H * 0.9 : 0;
+  const lift = night && !s.baseH && P.fassungPos !== 'boden' ? H * 0.9 : 0;
   lampGroup.position.z = lift;
   shade.position.z = s.baseH ? s.baseH - 1.6 : 0; // Schirmrand sitzt in der Nut des Sockels
 
@@ -693,12 +901,24 @@ function applyScene() {
   room.position.set(0, 0, roomH / 2);
   roomFloor.scale.set(roomR, roomR, 1);
   const mount = P.fassung ? P.fassungPos : 'keine';
-  const bulbZ = lift + (mount === 'sockel' && s.baseH ? s.baseH + Math.min(55, H * 0.3)
+  const inFloor = mount === 'boden';
+  const led = ((mount === 'sockel' && s.baseH) || inFloor) && P.einsatz !== 'fassung' ? P.einsatz : null;
+  const bulbZ = lift + (led ? s.baseH + (inFloor ? P.bodenDicke : 0) + 25
+    : (mount === 'sockel' && s.baseH) || inFloor ? s.baseH + Math.min(55, H * 0.3)
     : mount === 'oben' ? s.baseH + H * 0.62 : mount === 'unten' ? s.baseH + H * 0.38 : s.baseH + H / 2);
   bulbLight.position.set(0, 0, bulbZ);
   bulbLight.shadow.camera.far = roomR * 3;
+  bulb.visible = !led;
   bulb.position.set(0, 0, bulbZ);
   bulb.scale.setScalar(Math.min(s.maxR * 0.3, 30));
+  // Im Sockel sitzt das Leuchtmittel versenkt im Deckel, im Schirmboden liegt es auf der Bodenplatte
+  const ledT = inFloor ? Math.max(2, P.einsatzTiefe) : Math.max(2, Math.min(P.einsatzTiefe, s.baseH - 6));
+  ledPanel.visible = led === 'panel';
+  ledPuck.visible = led === 'puck';
+  ledPanel.scale.set(P.panelB, P.panelL, ledT);
+  ledPuck.scale.set(P.puckD / 2, ledT, P.puckD / 2);
+  ledPanel.position.z = ledPuck.position.z = inFloor ? P.bodenDicke + ledT / 2 : s.baseH - ledT / 2;
+  ledMaterial.emissive.set(night ? 0xfff1d6 : 0x000000);
   material.emissive.set(night ? P.farbe : 0x000000).multiplyScalar(night ? 0.3 : 1); // Filament leuchtet durch
   controls.maxDistance = night ? roomR * 0.92 : size * 10;
 }
@@ -837,7 +1057,7 @@ function set(k, v) {
   }
   if (k === 'sockel') {
     if (v && P.fassungPos !== 'sockel') P.fassungPos = 'sockel';
-    if (!v && P.fassungPos === 'sockel') P.fassungPos = 'oben';
+    if (!v && P.fassungPos === 'sockel') P.fassungPos = 'boden';
     inputs.fassungPos.set(P.fassungPos);
   }
   updateEnabled();
@@ -847,7 +1067,21 @@ function set(k, v) {
 function updateEnabled() {
   const off = new Set();
   if (!P.fassung) ['fassungPos', 'fassungTyp', 'lochD', 'fassRing', 'speichen', 'speichenBreite', 'speichenHoehe', 'druckUmdrehen'].forEach(k => off.add(k));
-  if (P.fassungPos === 'sockel') ['fassRing', 'speichen', 'speichenBreite', 'speichenHoehe'].forEach(k => off.add(k));
+  const floorMount = P.fassungPos === 'sockel' || P.fassungPos === 'boden';
+  if (floorMount) ['speichen', 'speichenBreite', 'speichenHoehe'].forEach(k => off.add(k));
+  const inBase = P.fassung && floorMount;
+  if (!inBase) off.add('einsatz');
+  if (!P.fassung || P.fassungPos !== 'boden') ['bodenDicke', 'kragen'].forEach(k => off.add(k));
+  if (!inBase || P.einsatz !== 'fassung') ['nasen', 'kragen'].forEach(k => off.add(k));
+  if (P.fassungPos === 'sockel' || (P.fassungPos === 'boden' && P.einsatz !== 'fassung')) off.add('fassRing');
+  if (P.verdrehVerlauf !== 'lokal' || P.verdrehung === 0) ['verdrehMitte', 'verdrehBreite'].forEach(k => off.add(k));
+  if (P.muster !== 'geflecht') off.add('webart');
+  if (!inBase || P.einsatz !== 'puck') off.add('puckD');
+  if (!inBase || P.einsatz !== 'panel') ['panelB', 'panelL', 'panelEcke'].forEach(k => off.add(k));
+  if (!inBase || P.einsatz === 'fassung') ['einsatzTiefe', 'falz'].forEach(k => off.add(k));
+  if (inBase && P.einsatz !== 'fassung') ['fassungTyp', 'lochD'].forEach(k => off.add(k));
+  if (P.rillenForm !== 'kissen') off.add('prallheit');
+  if (P.rillenAmp === 0) off.add('prallheit');
   if (P.muster === 'keine') ['straenge', 'drehung', 'webTiefe', 'wellenAmp', 'wellenFreq'].forEach(k => off.add(k));
   if (P.muster !== 'geflecht') off.add('webTiefe');
   if (P.wellenAmp === 0) off.add('wellenFreq');
@@ -932,7 +1166,7 @@ for (const name of Object.keys(PRESETS)) {
 }
 
 document.getElementById('btnRandom').onclick = randomize;
-document.getElementById('btnReset').onclick = () => { applyAll(MESH_LAMPE); firstFrame = true; };
+document.getElementById('btnReset').onclick = () => { applyAll(WOVEN_LIGHT); firstFrame = true; };
 document.getElementById('btnCam').onclick = frameCamera;
 document.getElementById('btnLight').onclick = e => {
   night = !night;
@@ -972,7 +1206,7 @@ document.getElementById('btnLink').onclick = async () => {
 /* ---------- Start ---------- */
 buildControls();
 resize();
-applyAll(readHash() || MESH_LAMPE);
+applyAll(readHash() || WOVEN_LIGHT);
 </script>
 </body>
 </html>
