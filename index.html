@@ -215,7 +215,13 @@ const SCHEMA = [
   ]},
   { group: 'Geflecht', open: true, items: [
     { k: 'muster', l: 'Muster', type: 'select', def: 'geflecht', opts: [
-      ['geflecht', 'Geflecht (gekreuzt)'], ['rechts', 'Spirale rechts'], ['links', 'Spirale links'], ['keine', 'Kein Geflecht']] },
+      ['geflecht', 'Geflecht (gekreuzt)'], ['rechts', 'Spirale rechts'], ['links', 'Spirale links'], ['strick', 'Strickmuster (horizontale Reihen)'],
+      ['keine', 'Kein Geflecht']] },
+    { k: 'maschen', l: 'Strick: Maschen je Reihe', min: 20, max: 400, step: 1, def: 110, u: '' },
+    { k: 'strickReihe', l: 'Strick: Reihenabstand', min: 1.5, max: 8, step: 0.1, def: 2.6, u: 'mm' },
+    { k: 'strickHub', l: 'Strick: Zickzack der Reihe', min: 0, max: 3, step: 0.05, def: 0.7, u: 'mm' },
+    { k: 'strickTiefe', l: 'Strick: Wölbung der Maschen', min: 0, max: 3, step: 0.05, def: 0.9, u: 'mm' },
+    { k: 'strickHoehe', l: 'Strick: Fadenhöhe', min: 0.8, max: 6, step: 0.1, def: 2, u: 'mm' },
     { k: 'straenge', l: 'Stränge je Richtung', min: 3, max: 220, step: 1, def: 16, u: '' },
     { k: 'drehung', l: 'Drehung', min: 0, max: 2.5, step: 0.01, def: 0.34, u: 'U' },
     { k: 'strangBreite', l: 'Strangbreite', min: 0.8, max: 10, step: 0.1, def: 2.4, u: 'mm' },
@@ -256,7 +262,8 @@ const SCHEMA = [
     { k: 'diffusorDichte', l: 'Diffusor-Dichte (0 = hell, 100 = dicht)', min: 0, max: 100, step: 5, def: 0, u: '%' },
     { k: 'diffusorNoppe', l: 'Zusatzstärke der dichten Stellen', min: 0.2, max: 2, step: 0.1, def: 0.6, u: 'mm' },
     { k: 'diffusorRaster', l: 'Raster der Wabenstruktur', min: 1.5, max: 8, step: 0.5, def: 3, u: 'mm' },
-    { k: 'diffusorHoehe', l: 'Haubenhöhe über dem Deckel', min: 3, max: 80, step: 0.5, def: 20, u: 'mm' },
+    { k: 'diffusorVersenkt', l: 'Diffusor bündig versenken (schließt mit der Oberfläche ab)', type: 'check', def: true },
+    { k: 'diffusorHoehe', l: 'Haubenhöhe (Abstand Panel → Deckfläche)', min: 3, max: 80, step: 0.5, def: 20, u: 'mm' },
     { k: 'diffusorWand', l: 'Haubenwand', min: 0.8, max: 3, step: 0.1, def: 1.2, u: 'mm' },
     { k: 'fassungTyp', l: 'Fassungstyp', type: 'select', def: 'e27', opts: [
       ['e27', 'E27 (Loch ca. 42 mm)'], ['e14', 'E14 (Loch ca. 29 mm)'], ['gu10', 'GU10 (Loch ca. 36 mm)'], ['frei', 'Eigenes Maß']] },
@@ -273,6 +280,7 @@ const SCHEMA = [
     { k: 'sockelWand', l: 'Wandstärke', min: 1.2, max: 6, step: 0.1, def: 2.4, u: 'mm' },
     { k: 'sockelDeck', l: 'Deckelstärke', min: 2.5, max: 6, step: 0.1, def: 3.2, u: 'mm' },
     { k: 'kabelD', l: 'Kabelschlitz', min: 0, max: 16, step: 0.5, def: 8, u: 'mm' },
+    { k: 'lippe', l: 'Einstecktiefe der Schirmlippe', min: 1.6, max: 25, step: 0.5, def: 1.6, u: 'mm' },
   ]},
   { group: 'Darstellung & Export', items: [
     { k: 'farbe', l: 'Farbe', type: 'color', def: '#e9dcc4' },
@@ -324,13 +332,23 @@ const WOVEN_PANEL = {
 
 // Dieselben Lampen mit getrenntem Sockel: Schirm und Sockel sind zwei Teile, der Schirmrand steckt in der Nut des Sockels.
 // Im hohlen Sockel ist Platz für Fassungskörper, Treiber und Kabel; das Kabel läuft durch den Schlitz in der Wand.
-const SOCKEL_TEIL = { fassungPos: 'sockel', sockel: true, sockelUeberstand: 2, sockelWand: 2.4, sockelDeck: 3.2, kabelD: 8, kanteUnten: 3 };
+const SOCKEL_TEIL = { fassungPos: 'sockel', sockel: true, lippe: 10, diffusorVersenkt: true, sockelUeberstand: 2, sockelWand: 2.4, sockelDeck: 3.2, kabelD: 8, kanteUnten: 3 };
 const WOVEN_SOCKEL = { ...WOVEN_LIGHT, ...SOCKEL_TEIL, sockelHoehe: 60 };
 const WOVEN_PANEL_SOCKEL = { ...WOVEN_PANEL, ...SOCKEL_TEIL, sockelHoehe: 45 };
+
+// Strickmuster wie auf den Fotos: horizontale Reihen, Maschen folgen der Falte, abgerundete Kanten
+const STRICK = {
+  ...WOVEN_LIGHT, muster: 'strick', maschen: 110, strickReihe: 2.6, strickHub: 0.7, strickTiefe: 0.75, strickHoehe: 2,
+  strangTiefe: 1.2, hoehe: 220, radiusUnten: 78, radiusOben: 80, farbe: '#d9967a',
+};
+const STRICK_PANEL = { ...WOVEN_PANEL_SOCKEL, ...SOCKEL_TEIL, muster: 'strick', maschen: 130, strickReihe: 2.6, strickHub: 0.7,
+  strickTiefe: 0.75, strickHoehe: 2, strangTiefe: 1.2, sockelHoehe: 45, farbe: '#d9967a' };
 
 const PRESETS = {
   'Woven Light': WOVEN_LIGHT,
   'Woven Light · Panel 120×160': WOVEN_PANEL,
+  'Strick-Lampe': STRICK,
+  'Strick · Panel 120×160 · Sockel': STRICK_PANEL,
   'Woven Light · Sockel getrennt': WOVEN_SOCKEL,
   'Panel 120×160 · Sockel getrennt': WOVEN_PANEL_SOCKEL,
   'Mesh Tischlampe': MESH_LAMPE,
@@ -543,15 +561,45 @@ function frames(Pts, normals) {
 const W = (code, text) => ({ code, text });
 const OVERHANG_MAX = 55, TRIS_MAX = 1500000;
 
-// Größte Neigung der Strangverläufe gegen die Senkrechte (ohne Webversatz), an count Strängen je Richtung
+// Strickmuster: horizontale Reihen, die im Zickzack auf und ab laufen. Nachbarreihen sind um eine halbe Masche
+// versetzt (Vorzeichen wechselt je Reihe): Wo die eine oben ist, ist die darüber unten, dort berühren sie sich;
+// dazwischen bleiben rautenförmige Löcher. Zusätzlich wölbt sich jede Masche auf einer Seite nach außen, auf der
+// anderen nach innen; an den Berührungspunkten ist die Wölbung null, dort liegen die Reihen genau übereinander.
+function knitGeom(p, H) {
+  const rows = Math.max(2, Math.round(H / p.strickReihe));
+  return { rows, dz: H / rows, M: Math.round(p.maschen) };
+}
+function knitPoint(p, surf, g, k, s) {
+  const sg = k % 2 ? -1 : 1, u = g.M * s;
+  const z = Math.min(surf.H, Math.max(0, (k + 0.5) * g.dz + sg * p.strickHub * Math.cos(2 * Math.PI * u)));
+  const t = z / surf.H, c = surf.S(s, t), nS = surf.normal(s, t);
+  const off = sg * p.strickTiefe * Math.sin(2 * Math.PI * u);
+  return [[c[0] + nS[0] * off, c[1] + nS[1] * off, c[2] + nS[2] * off], nS];
+}
+
+// Größte Neigung der Strangverläufe gegen die Senkrechte (ohne Webversatz), an count Strängen je Richtung.
+// Beim Strickmuster: Neigung von Reihe zu Reihe an derselben Stelle (Wandneigung plus Maschenwölbung).
 function measureOverhang(p, count = 128, segs = 480) {
-  const { S } = makeSurface(p);
+  const surf = makeSurface(p), { S } = surf;
+  let mxK = 0;
+  if (p.muster === 'strick') {
+    const g = knitGeom(p, surf.H);
+    for (let i = 0; i < count; i++) {
+      const s = i / count;
+      let prev = knitPoint(p, surf, g, 0, s)[0];
+      for (let k = 1; k < g.rows; k++) {
+        const c = knitPoint(p, surf, g, k, s)[0], d = sub(c, prev);
+        mxK = Math.max(mxK, Math.acos(Math.min(1, Math.abs(d[2]) / (len(d) || 1))) * 180 / Math.PI);
+        prev = c;
+      }
+    }
+  }
   const waveS = p.wellenAmp / 360;
-  const dirs = p.muster === 'keine' ? [] : p.muster === 'geflecht' ? (p.drehung > 0 ? [1, -1] : [1]) : p.muster === 'rechts' ? [1] : [-1];
+  const dirs = p.muster === 'keine' || p.muster === 'strick' ? [] : p.muster === 'geflecht' ? (p.drehung > 0 ? [1, -1] : [1]) : p.muster === 'rechts' ? [1] : [-1];
   const paths = [];
   for (const dir of dirs) for (let i = 0; i < count; i++) paths.push([i / count, dir]);
   for (let i = 0; i < p.rippen; i++) paths.push([(i + 0.5) / p.rippen, 0]);
-  let mx = 0;
+  let mx = mxK;
   for (const [s0, dir] of paths) {
     let prev = null;
     for (let k = 0; k <= segs; k++) {
@@ -623,8 +671,25 @@ function buildLampshade(p) {
     mb.addTube(pts, N, B, height, thick, true);
   };
 
+  // Strickmuster: jede Reihe ist ein geschlossener Faden rund um den Schirm
+  const knit = p.muster === 'strick' ? knitGeom(p, H) : null;
+  if (knit) {
+    const segs = knit.M * 8;
+    for (let k = 0; k < knit.rows; k++) {
+      const pts = [], nrm = [];
+      for (let i = 0; i < segs; i++) { const [c, nS] = knitPoint(p, surf, knit, k, i / segs); pts.push(c); nrm.push(nS); }
+      const N = [], B = [];
+      for (let i = 0; i < segs; i++) {
+        const t = norm(sub(pts[(i + 1) % segs], pts[(i - 1 + segs) % segs])), s = nrm[i], d = dot(s, t);
+        const nn = norm([s[0] - t[0] * d, s[1] - t[1] * d, s[2] - t[2] * d]);
+        N.push(nn); B.push(cross(t, nn));
+      }
+      mb.addTube(pts, N, B, p.strickHoehe, p.strangTiefe, true);
+    }
+  }
+
   // Geflecht
-  if (p.muster !== 'keine') {
+  if (p.muster !== 'keine' && !knit) {
     const dirs = p.muster === 'geflecht' ? (p.drehung > 0 ? [1, -1] : [1])
                : p.muster === 'rechts' ? [1] : [-1];
     for (const dir of dirs)
@@ -634,7 +699,7 @@ function buildLampshade(p) {
   for (let i = 0; i < p.rippen; i++) strand((i + 0.5) / p.rippen, 0, 0, false);
 
   // Zwischenringe
-  const ringThick = p.strangTiefe + (weaveOn ? 2 * p.webTiefe : 0);
+  const ringThick = p.strangTiefe + (weaveOn ? 2 * p.webTiefe : 0) + (knit ? 2 * p.strickTiefe : 0);
   for (let k = 1; k <= p.zwischenRinge; k++) {
     const t = k / (p.zwischenRinge + 1);
     ring(t, p.strangBreite, ringThick);
@@ -680,6 +745,19 @@ function buildLampshade(p) {
   // Alles auf 0..H begrenzen (flache Auflageflächen)
   for (let i = 2; i < mb.pos.length; i += 3) mb.pos[i] = Math.min(H, Math.max(0, mb.pos[i]));
 
+  // Lippe: geschlossenes, senkrechtes Band unter dem Schirm, das in die Nut des Sockels gesteckt wird.
+  // Der Schirm wird dafür um die Einstecktiefe angehoben; sichtbar bleibt die volle Höhe H.
+  const lip = p.sockel ? p.lippe : 0;
+  if (lip > 0) {
+    for (let i = 2; i < mb.pos.length; i += 3) mb.pos[i] += lip;
+    const segs = Math.max(128, Math.round(res * 1.5)), pts = [], N = [], B = [], zc = (lip + 0.5) / 2;
+    for (let i = 0; i < segs; i++) {
+      const s = i / segs, c = S(s, 0), nh = hNormal(s, 0);
+      pts.push([c[0], c[1], zc]); N.push(nh); B.push(cross([-nh[1], nh[0], 0], nh));
+    }
+    mb.addTube(pts, N, B, lip + 0.5, rimThick, true);
+  }
+
   // Sockel
   const base = p.sockel ? buildBase(p, surf, rimThick, warnings) : null;
 
@@ -709,6 +787,10 @@ function buildLampshade(p) {
     warnings.push(W('ueberhang', `Stränge sind bis zu ${maxOverhang.toFixed(0)}° geneigt. Ab etwa ${OVERHANG_MAX}° wird der Druck ohne Stützen unsauber.`));
   if (p.strangBreite < 1.2 || p.strangTiefe < 1)
     warnings.push(W('fein', 'Sehr feine Stränge: Mit 0,4-mm-Düse langsam drucken und Linienbreite im Slicer prüfen.'));
+  if (knit && p.strickHoehe - (knit.dz - 2 * p.strickHub) < 0.3)
+    warnings.push(W('strickLose', `Die Strickreihen berühren sich kaum (Überlappung ${(p.strickHoehe - (knit.dz - 2 * p.strickHub)).toFixed(1).replace('.', ',')} mm, nötig mind. 0,3 mm). Fadenhöhe oder Zickzack erhöhen.`));
+  if (knit && p.strickHoehe >= knit.dz + 2 * p.strickHub)
+    warnings.push(W('strickZu', 'Die Strickreihen liegen lückenlos aufeinander: keine Löcher, kaum Licht. Fadenhöhe senken.'));
   if (p.muster === 'keine' && p.rippen === 0)
     warnings.push(W('lose', 'Kein Geflecht und keine Rippen: Die Ränder hängen lose.'));
   if (mount === 'sockel' && !p.sockel)
@@ -728,7 +810,9 @@ function buildLampshade(p) {
     diffuser: diff ? { positions: new Float32Array(diff.mb.pos), indices: new Uint32Array(diff.mb.idx), height: diff.height,
       width: diff.width, length: diff.length, grams: diff.mb.volume / 1000 * 1.24, metrics: diff.metrics, extra: diffuserMetrics(p).depth } : null,
     stats: { H, width: 2 * maxX, depth: 2 * maxY, volume: mb.volume + (base ? base.volume : 0), tris, maxOverhang, maxR,
-      baseH: base ? p.sockelHoehe : 0, strands: n },
+      baseH: base ? p.sockelHoehe : 0, lip, strands: n,
+      knit: knit ? { rows: knit.rows, M: knit.M, dz: knit.dz, stitch: surf.shape.perimeterUnit * R(0.5) / knit.M,
+        hole: Math.max(0, knit.dz + 2 * p.strickHub - p.strickHoehe) } : null },
     warnings,
   };
 }
@@ -871,17 +955,31 @@ function buildBase(p, surf, rimThick, warnings) {
   const outerA = polarSample(off(uOut, 1024), angs);
   const grooveO = polarSample(off(rimThick / 2 + gap, 1024), angs), grooveI = polarSample(off(-rimThick / 2 - gap, 1024), angs);
   const L = insertLoops(p, ins, angs);
-  const zDeck = bh - p.sockelDeck;
-  mb.addExtrudedRing(outerA, grooveO, zDeck, bh);
-  mb.addExtrudedRing(grooveO, grooveI, zDeck, bh - grooveDepth);
+  const zDeck = bh - p.sockelDeck, lip = p.lippe, floorT = 1.6;
+  // Nut für die Schirmlippe: so tief wie die Einstecktiefe, mit Boden und Wänden nach unten, wenn sie tiefer als der Deckel ist
+  const zBot = Math.max(0.5, Math.min(zDeck, bh - lip - floorT));
+  const grooveBottom = Math.max(zBot, bh - lip);
+  mb.addExtrudedRing(outerA, grooveO, zBot, bh);
+  mb.addExtrudedRing(grooveO, grooveI, zBot, grooveBottom);
   mb.addExtrudedRing(grooveI, L.cut, zDeck, bh);
+  if (zBot < zDeck) {
+    // Innere Nutwand; sie weicht dem Einlass aus, falls der bis an die Nut reicht
+    const wallIn = polarSample(off(-rimThick / 2 - gap - p.sockelWand, 1024), angs)
+      .map((q, i) => Math.hypot(...q) > Math.hypot(...L.frame[i]) ? q : L.frame[i]);
+    mb.addExtrudedRing(grooveI, wallIn, zBot, bh);
+  }
 
   // Einlass für Puck oder Panel: Rahmen nach unten und umlaufende Auflagekante
   if (ins.depth > 0) {
-    const depth = Math.min(ins.depth, bh - 6), ledgeT = 1.6;
+    const ledgeT = 1.6, depth = Math.min(ins.depth, bh - ledgeT - 0.5);
     mb.addExtrudedRing(L.frame, L.cut, bh - depth - ledgeT, bh);
     mb.addExtrudedRing(L.cut, L.ledge, bh - depth - ledgeT, bh - depth);
   }
+
+  // Reicht die Sockelhöhe für Nut und Einlass?
+  const need = Math.max(lip + floorT, ins.depth + 1.6) + 3;
+  if (bh < need)
+    warnings.push(W('sockelFlach', `Der Sockel ist zu niedrig: Schirmlippe bzw. Einlass brauchen mindestens ${Math.ceil(need)} mm Sockelhöhe.`));
 
   // Passt der Ausschnitt in den Deckel?
   if (grooveI.some(([x, y], i) => Math.hypot(...L.cut[i]) + 3 > Math.hypot(x, y)))
@@ -929,7 +1027,9 @@ function diffuserMetrics(p) {
     t, h, a, cov, r, noppen,
     mean: t + cov * h,
     // Die flache Platte liegt mit den Noppen auf dem Panel, deshalb wird der Einlass um Grundschicht + Noppen tiefer
-    depth: p.diffusorForm === 'haube' ? t : t + (cov > 0 ? h : 0),
+    // Versenkt: Einlass so tief wie der ganze Diffusor, seine Deckfläche liegt bündig mit der Oberfläche.
+    // Nicht versenkt: Der Diffusor liegt auf dem Panel und steht über.
+    depth: !p.diffusorVersenkt ? 0 : p.diffusorForm === 'haube' ? t + p.diffusorHoehe : t + (cov > 0 ? h : 0),
   };
 }
 
@@ -1091,7 +1191,7 @@ function applyScene() {
   const lift = night && !s.baseH && P.fassungPos !== 'boden' ? H * 0.9 : 0;
   lampGroup.position.z = lift;
   // Schirmrand sitzt in der Nut des Sockels; zerlegt schwebt der Schirm darüber
-  shade.position.z = s.baseH ? s.baseH - 1.6 + (exploded ? Math.max(40, H * 0.3) : 0) : 0;
+  shade.position.z = s.baseH ? s.baseH - s.lip + (exploded ? Math.max(40, H * 0.3) : 0) : 0;
 
   scene.background = new THREE.Color(night ? 0x0b0907 : 0x2a241d);
   hemi.visible = sun.visible = floor.visible = grid.visible = !night;
@@ -1213,6 +1313,8 @@ function renderStats() {
     ['Höhe', (s.H + s.baseH).toFixed(0) + ' mm' + (s.baseH ? ` (Schirm ${s.H.toFixed(0)})` : '')],
     ['Breite × Tiefe', `${s.width.toFixed(0)} × ${s.depth.toFixed(0)} mm`],
     ['Druckteile', ['Schirm', s.baseH && 'Sockel', current.diffuser && 'Diffusor'].filter(Boolean).join(' + ')],
+    ...(s.knit ? [['Strickmuster', `${s.knit.M} Maschen × ${s.knit.rows} Reihen`],
+      ['Masche / Loch', `${fmt(s.knit.stitch)} mm breit, Loch bis ${fmt(s.knit.hole)} mm hoch`]] : []),
     ['Dreiecke', s.tris.toLocaleString('de-DE')],
     ['Filament (PLA)', 'ca. ' + grams.toFixed(0) + ' g'],
     ...(current.insert ? [['Einlass', `${fmt(current.insert.w)} × ${fmt(current.insert.l)} × ${fmt(current.insert.depth)} mm`]] : []),
@@ -1249,6 +1351,7 @@ function estimateTris(p) {
   const per = (WEBART[p.webart] || WEBART.leinwand).length;
   const weaveOn = p.muster === 'geflecht' && p.drehung > 0 && p.webTiefe > 0;
   const n = weaveOn ? Math.ceil(p.straenge / per) * per : p.straenge;
+  if (p.muster === 'strick') return Math.round(p.hoehe / p.strickReihe) * p.maschen * 8 * 8 + p.rippen * (p.aufloesung * 8 + 4) + 150000;
   const dirs = p.muster === 'keine' ? 0 : p.muster === 'geflecht' && p.drehung > 0 ? 2 : 1;
   const crossings = weaveOn ? 2 * p.drehung * n : 0;
   const segs = Math.min(1600, Math.max(20, Math.round(p.aufloesung * Math.max(1, p.drehung * 1.5)), Math.ceil(crossings * 3)));
@@ -1279,12 +1382,19 @@ async function fixOverhang(p) {
   const good = x => measureOverhang(x, 64, 360) <= target;
   if (good(q)) return q;
   // Reihenfolge: zuerst was den Look am wenigsten verändert
+  const knit = p.muster === 'strick';
   const steps = [
-    ['drehung', Math.max(0.1, p.drehung * 0.5)], ['verdrehung', 0], ['wellenAmp', 0],
+    ...(knit ? [['strickTiefe', 0.2]] : [['drehung', Math.max(0.1, p.drehung * 0.5)]]),
+    ['verdrehung', 0], ['wellenAmp', 0],
     ['kanteUnten', 0], ['kanteOben', 0], ['prallheit', 0], ['rillenAmp', 0],
-    ['drehung', 0.1], ['bauch', 0], ['hoehe', 400],
+    ...(knit ? [['strickTiefe', 0]] : [['drehung', 0.1]]), ['bauch', 0], ['hoehe', 400],
   ];
-  for (const [k, lim] of steps) if (await nudge(q, k, lim, good)) break;
+  for (const [k, lim] of steps) {
+    const before = measureOverhang(q, 64, 360), old = q[k];
+    if (await nudge(q, k, lim, good)) break;
+    // Hat die Stellschraube nichts gebracht (z. B. Kissen ohne Etagen), bleibt sie unverändert
+    if (measureOverhang(q, 64, 360) >= before - 0.05) q[k] = old;
+  }
   return q;
 }
 
@@ -1331,6 +1441,14 @@ const FIXES = {
   web: async p => ({ ...p, webTiefe: snap('webTiefe', Math.max(0, Math.floor((p.strangTiefe / 2 - 0.05) / 0.05) * 0.05)) }),
   fein: async p => ({ ...p, strangBreite: Math.max(p.strangBreite, 1.2), strangTiefe: Math.max(p.strangTiefe, 1) }),
   lose: async p => ({ ...p, rippen: 12 }),
+  sockelFlach: async p => {
+    const d = diffuserMetrics(p), ins = insertSpec(p, 50);
+    return { ...p, sockelHoehe: snap('sockelHoehe', Math.ceil(Math.max(p.lippe + 1.6, ins.depth + 1.6) + 3)) };
+  },
+  // Fadenhöhe so, dass sich Nachbarreihen um 0,5 mm überlappen
+  strickLose: async p => { const g = knitGeom(p, p.hoehe); return { ...p, strickHoehe: snap('strickHoehe', Math.ceil((g.dz - 2 * p.strickHub + 0.5) * 10) / 10) }; },
+  // Fadenhöhe so, dass die Löcher etwa 0,6 mm hoch bleiben, aber die Reihen sich weiter überlappen
+  strickZu: async p => { const g = knitGeom(p, p.hoehe); return { ...p, strickHoehe: snap('strickHoehe', Math.floor((g.dz + 2 * p.strickHub - 0.6) * 10) / 10) }; },
   sockelFehlt: async p => ({ ...p, sockel: true }),
   einsatzPos: async p => ({ ...p, fassungPos: p.sockel ? 'sockel' : 'boden' }),
   diffusor: async p => {
@@ -1487,22 +1605,24 @@ function updateEnabled() {
   if (P.muster !== 'geflecht') off.add('webart');
   if (!inBase || P.einsatz !== 'puck') off.add('puckD');
   if (!inBase || P.einsatz !== 'panel') ['panelB', 'panelL', 'panelEcke'].forEach(k => off.add(k));
-  if (!inBase || P.einsatz === 'fassung') ['einsatzTiefe', 'falz', 'spiel', 'diffusor', 'diffusorForm', 'diffusorDicke', 'diffusorDichte', 'diffusorNoppe', 'diffusorRaster', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
-  if (!P.diffusor) ['diffusorForm', 'diffusorDicke', 'diffusorDichte', 'diffusorNoppe', 'diffusorRaster', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
+  if (!inBase || P.einsatz === 'fassung') ['einsatzTiefe', 'falz', 'spiel', 'diffusor', 'diffusorVersenkt', 'diffusorForm', 'diffusorDicke', 'diffusorDichte', 'diffusorNoppe', 'diffusorRaster', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
+  if (!P.diffusor) ['diffusorVersenkt', 'diffusorForm', 'diffusorDicke', 'diffusorDichte', 'diffusorNoppe', 'diffusorRaster', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
   if (P.diffusorDichte === 0) ['diffusorNoppe', 'diffusorRaster'].forEach(k => off.add(k));
   if (P.diffusorDichte === 100) off.add('diffusorRaster');
   if (P.diffusorForm !== 'haube') ['diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
   if (inBase && P.einsatz !== 'fassung') ['fassungTyp', 'lochD'].forEach(k => off.add(k));
   if (P.rillenForm !== 'kissen') off.add('prallheit');
   if (P.rillenAmp === 0) off.add('prallheit');
-  if (P.muster === 'keine') ['straenge', 'drehung', 'webTiefe', 'wellenAmp', 'wellenFreq'].forEach(k => off.add(k));
+  if (P.muster === 'keine' || P.muster === 'strick') ['straenge', 'drehung', 'webTiefe', 'wellenAmp', 'wellenFreq'].forEach(k => off.add(k));
+  if (P.muster === 'strick') ['strangBreite'].forEach(k => off.add(k));
+  else ['maschen', 'strickReihe', 'strickHub', 'strickTiefe', 'strickHoehe'].forEach(k => off.add(k));
   if (P.muster !== 'geflecht') off.add('webTiefe');
   if (P.wellenAmp === 0) off.add('wellenFreq');
   if (P.rillenAmp === 0) off.add('rillenAnzahl');
   if (P.querschnitt === '0') off.add('eckigkeit');
   if (P.verdrehung === 0) off.add('verdrehVerlauf');
   if (P.fassungPos !== 'oben') off.add('druckUmdrehen');
-  if (!P.sockel) ['sockelHoehe', 'sockelUeberstand', 'sockelWand', 'sockelDeck', 'kabelD'].forEach(k => off.add(k));
+  if (!P.sockel) ['sockelHoehe', 'sockelUeberstand', 'sockelWand', 'sockelDeck', 'kabelD', 'lippe'].forEach(k => off.add(k));
   document.querySelectorAll('.ctrl').forEach(el => el.classList.toggle('disabled', off.has(el.dataset.key)));
 }
 
@@ -1595,7 +1715,7 @@ const fileBase = () => `${P.querschnitt === '0' ? 'rund' : P.querschnitt + 'eck'
 document.getElementById('btnStl').onclick = () => {
   const flip = P.fassung && P.fassungPos === 'oben' && P.druckUmdrehen;
   const name = `lampenschirm_${fileBase()}.stl`;
-  download(toSTL(current.positions, current.indices, flip, current.stats.H), name, 'model/stl');
+  download(toSTL(current.positions, current.indices, flip, current.stats.H + current.stats.lip), name, 'model/stl');
   toast('STL gespeichert: ' + name);
 };
 document.getElementById('btnStlDiff').onclick = () => {
