@@ -252,7 +252,10 @@ const SCHEMA = [
     { k: 'diffusor', l: 'Diffusor über Puck/Panel (eigenes Druckteil)', type: 'check', def: true },
     { k: 'diffusorForm', l: 'Diffusor-Form', type: 'select', def: 'flach', opts: [
       ['flach', 'Flache Platte (bündig auf dem Panel)'], ['haube', 'Haube (mit Abstand zum Panel, streut stärker)']] },
-    { k: 'diffusorDicke', l: 'Diffusor-Stärke', min: 0.4, max: 3, step: 0.1, def: 0.8, u: 'mm' },
+    { k: 'diffusorDicke', l: 'Diffusor-Grundschicht (immer geschlossen)', min: 0.4, max: 3, step: 0.1, def: 0.8, u: 'mm' },
+    { k: 'diffusorDichte', l: 'Diffusor-Dichte (0 = hell, 100 = dicht)', min: 0, max: 100, step: 5, def: 0, u: '%' },
+    { k: 'diffusorNoppe', l: 'Zusatzstärke der dichten Stellen', min: 0.2, max: 2, step: 0.1, def: 0.6, u: 'mm' },
+    { k: 'diffusorRaster', l: 'Raster der Wabenstruktur', min: 1.5, max: 8, step: 0.5, def: 3, u: 'mm' },
     { k: 'diffusorHoehe', l: 'Haubenhöhe über dem Deckel', min: 3, max: 80, step: 0.5, def: 20, u: 'mm' },
     { k: 'diffusorWand', l: 'Haubenwand', min: 0.8, max: 3, step: 0.1, def: 1.2, u: 'mm' },
     { k: 'fassungTyp', l: 'Fassungstyp', type: 'select', def: 'e27', opts: [
@@ -421,15 +424,15 @@ class MeshBuilder {
     this.volume += (area2(outer) - area2(inner)) * (zt - zAvg);
   }
 
-  // Volle Platte mit sternförmigem Umriss (gegen den Uhrzeigersinn, Mittelpunkt innen)
-  addPlate(loop, zb, zt) {
+  // Volle Platte mit sternförmigem Umriss um (cx, cy), gegen den Uhrzeigersinn
+  addPlate(loop, zb, zt, cx = 0, cy = 0) {
     const M = loop.length;
     let b = this.vcount;
-    this.v(0, 0, zt);
+    this.v(cx, cy, zt);
     for (const [x, y] of loop) this.v(x, y, zt);
     for (let i = 0; i < M; i++) this.idx.push(b, b + 1 + i, b + 1 + (i + 1) % M);
     b = this.vcount;
-    this.v(0, 0, zb);
+    this.v(cx, cy, zb);
     for (const [x, y] of loop) this.v(x, y, zb);
     for (let i = 0; i < M; i++) this.idx.push(b, b + 1 + (i + 1) % M, b + 1 + i);
     b = this.vcount;
@@ -684,8 +687,12 @@ function buildLampshade(p) {
   const ins = insertSpec(p, R(0));
   const ledMounted = (ins.kind === 'puck' || ins.kind === 'panel') && (mount === 'boden' || (mount === 'sockel' && p.sockel));
   const diff = p.diffusor && ledMounted ? buildDiffuser(p, ins) : null;
-  if (diff && p.diffusorDicke > 1.6)
-    warnings.push(W('diffusor', 'Diffusor dicker als 1,6 mm schluckt viel Licht. 0,6–1,2 mm in Weiß oder Natur ist meist ideal.'));
+  if (diff && diff.metrics.mean > 1.6)
+    warnings.push(W('diffusor', `Diffusor im Mittel ${diff.metrics.mean.toFixed(1).replace('.', ',')} mm stark: schluckt viel Licht. 0,6–1,2 mm in Weiß oder Natur ist meist ideal.`));
+  if (diff && diff.metrics.noppen && 2 * diff.metrics.r < 1)
+    warnings.push(W('noppen', `Die Waben sind nur ${(2 * diff.metrics.r).toFixed(1).replace('.', ',')} mm groß und drucken kaum sauber. Raster vergrößern.`));
+  if (diff && diff.metrics.noppen && p.diffusorForm === 'haube' && p.diffusorHoehe <= p.diffusorNoppe + 1)
+    warnings.push(W('haubeFlach', 'Die Haube ist kaum höher als die Waben und liegt fast auf dem Panel.'));
 
   // Kennzahlen
   let maxX = 0, maxY = 0;
@@ -719,7 +726,7 @@ function buildLampshade(p) {
     base: base ? { positions: new Float32Array(base.pos), indices: new Uint32Array(base.idx), height: p.sockelHoehe } : null,
     insert: ledMounted ? { w: 2 * ins.cut.hx, l: 2 * ins.cut.hy, depth: ins.depth, kind: ins.kind } : null,
     diffuser: diff ? { positions: new Float32Array(diff.mb.pos), indices: new Uint32Array(diff.mb.idx), height: diff.height,
-      width: diff.width, length: diff.length, grams: diff.mb.volume / 1000 * 1.24 } : null,
+      width: diff.width, length: diff.length, grams: diff.mb.volume / 1000 * 1.24, metrics: diff.metrics, extra: diffuserMetrics(p).depth } : null,
     stats: { H, width: 2 * maxX, depth: 2 * maxY, volume: mb.volume + (base ? base.volume : 0), tris, maxOverhang, maxR,
       baseH: base ? p.sockelHoehe : 0, strands: n },
     warnings,
@@ -895,7 +902,7 @@ function insertSpec(p, r0) {
     return { ...mk('kabel', rrect(r, r, r), 0, 0), cut: rrect(r, r, r), hx: r, hy: r, rr: r };
   }
   // Mit Diffusor wird der Einlass um dessen Stärke tiefer, damit er bündig auf dem Panel im Einlass liegt
-  const extra = p.diffusor ? p.diffusorDicke : 0;
+  const extra = p.diffusor ? diffuserMetrics(p).depth : 0;
   if (p.einsatz === 'puck') {
     const r = p.puckD / 2;
     return mk('puck', rrect(r, r, r), p.einsatzTiefe + extra, p.falz);
@@ -910,19 +917,59 @@ function insertSpec(p, r0) {
 // Er hat genau das Nennmaß des Panels bzw. Pucks und damit dasselbe Spiel zum Einlass wie das Panel selbst.
 // Flach: Platte, die bündig im Einlass auf dem Panel liegt. Haube: offener Kasten, dessen Wand im Einlass
 // auf dem Panelrand steht; die Deckfläche liegt diffusorHoehe über dem Deckel.
+// Dichte: Die Grundschicht ist immer geschlossen. Auf der Innenseite (zum Panel) sitzt ein Wabenraster aus
+// Sechseck-Noppen; die Dichte ist der Flächenanteil mit Noppen. Sechsecke im Raster a mit Umkreisradius r
+// bedecken 3·r²/a² der Fläche, bei r = a/√3 schließen sie lückenlos (100 %).
+function diffuserMetrics(p) {
+  const t = p.diffusorDicke, h = p.diffusorNoppe, a = p.diffusorRaster;
+  const cov = Math.min(1, Math.max(0, p.diffusorDichte / 100));
+  const r = a * Math.sqrt(cov / 3);
+  const noppen = cov > 0 && cov < 1;
+  return {
+    t, h, a, cov, r, noppen,
+    mean: t + cov * h,
+    // Die flache Platte liegt mit den Noppen auf dem Panel, deshalb wird der Einlass um Grundschicht + Noppen tiefer
+    depth: p.diffusorForm === 'haube' ? t : t + (cov > 0 ? h : 0),
+  };
+}
+
 function buildDiffuser(p, ins) {
   const mb = new MeshBuilder();
-  const item = ins.item, t = p.diffusorDicke;
+  const m = diffuserMetrics(p);
+  const item = ins.item, haube = p.diffusorForm === 'haube';
   const inner = grow(item, -p.diffusorWand);
   const angs = insertAngles(p, ins, [item, inner]);
   const outer = rectLoop(item, angs);
-  let height = t;
-  mb.addPlate(outer, 0, t);
-  if (p.diffusorForm === 'haube') {
-    height = t + p.diffusorHoehe;
+  // Bei 100 % ist die ganze Platte so stark wie Grundschicht + Noppen
+  const plateT = m.cov >= 1 ? m.t + m.h : m.t;
+  mb.addPlate(outer, 0, plateT);
+  let height = plateT;
+  if (m.noppen) {
+    // Noppen nur dort, wo sie ganz auf der Platte (bzw. innerhalb der Haubenwand) liegen, mit 0,6 mm Rand
+    const area = haube ? inner : item, margin = 0.6;
+    const rowH = m.a * Math.sqrt(3) / 2;
+    const hexAt = (cx, cy) => Array.from({ length: 6 }, (_, k) => {
+      const ang = Math.PI / 6 + Math.PI / 3 * k;
+      return [cx + m.r * Math.cos(ang), cy + m.r * Math.sin(ang)];
+    });
+    for (let row = -Math.ceil(area.hy / rowH); row <= Math.ceil(area.hy / rowH); row++) {
+      const cy = row * rowH, shift = (row & 1) ? m.a / 2 : 0;
+      for (let col = -Math.ceil(area.hx / m.a) - 1; col <= Math.ceil(area.hx / m.a) + 1; col++) {
+        const cx = col * m.a + shift;
+        const d = Math.hypot(cx, cy);
+        const lim = rrectRadius(Math.atan2(cy, cx), area.hx, area.hy, area.rr);
+        if (d + m.r + margin > lim) continue;
+        // Leicht in die Grundschicht eintauchen, damit der Slicer beides sicher verbindet
+        mb.addPlate(hexAt(cx, cy), plateT - 0.01, m.t + m.h, cx, cy);
+      }
+    }
+    height = m.t + m.h;
+  }
+  if (haube) {
+    height = m.t + p.diffusorHoehe;
     mb.addExtrudedRing(outer, rectLoop(inner, angs), 0, height);
   }
-  return { mb, height, width: 2 * item.hx, length: 2 * item.hy };
+  return { mb, height, width: 2 * item.hx, length: 2 * item.hy, metrics: m };
 }
 
 // Abstand vom Mittelpunkt zum Rand eines abgerundeten Rechtecks in Richtung a
@@ -1082,10 +1129,12 @@ function applyScene() {
   ledPanel.scale.set(P.panelB, P.panelL, ledT);
   ledPuck.scale.set(P.puckD / 2, ledT, P.puckD / 2);
   // Mit Diffusor liegt das Panel im Sockel um dessen Stärke tiefer
-  const dd = current.diffuser ? P.diffusorDicke : 0;
+  const dd = current.diffuser ? current.diffuser.extra : 0;
   const ledTop = inFloor ? P.bodenDicke + ledT : s.baseH - dd;
   ledPanel.position.z = ledPuck.position.z = ledTop - ledT / 2;
   if (current.diffuser) diffMesh.position.z = ledTop + current.diffuser.height;
+  // Vorschau: je stärker der Diffusor im Mittel, desto undurchsichtiger
+  if (current.diffuser) diffMaterial.opacity = Math.min(0.97, 0.55 + 0.3 * current.diffuser.metrics.mean);
   diffMaterial.emissive.set(night ? 0xffe2b8 : 0x000000);
   diffMaterial.emissiveIntensity = night ? 0.9 : 0;
   ledMaterial.emissive.set(night ? 0xfff1d6 : 0x000000);
@@ -1167,7 +1216,8 @@ function renderStats() {
     ['Dreiecke', s.tris.toLocaleString('de-DE')],
     ['Filament (PLA)', 'ca. ' + grams.toFixed(0) + ' g'],
     ...(current.insert ? [['Einlass', `${fmt(current.insert.w)} × ${fmt(current.insert.l)} × ${fmt(current.insert.depth)} mm`]] : []),
-    ...(current.diffuser ? [['Diffusor', `${fmt(current.diffuser.width)} × ${fmt(current.diffuser.length)} × ${fmt(current.diffuser.height)} mm`]] : []),
+    ...(current.diffuser ? [['Diffusor', `${fmt(current.diffuser.width)} × ${fmt(current.diffuser.length)} × ${fmt(current.diffuser.height)} mm`],
+      ['Diffusor-Dichte', `${P.diffusorDichte} %, im Mittel ${fmt(current.diffuser.metrics.mean)} mm stark`]] : []),
   ];
   document.getElementById('statsList').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
   const fixable = current.warnings.filter(w => w.code && FIXES[w.code]);
@@ -1283,7 +1333,19 @@ const FIXES = {
   lose: async p => ({ ...p, rippen: 12 }),
   sockelFehlt: async p => ({ ...p, sockel: true }),
   einsatzPos: async p => ({ ...p, fassungPos: p.sockel ? 'sockel' : 'boden' }),
-  diffusor: async p => ({ ...p, diffusorDicke: 1 }),
+  diffusor: async p => {
+    // Zuerst die Dichte senken, dann die Grundschicht, bis die mittlere Stärke bei 1,2 mm liegt
+    const q = { ...p }, good = x => diffuserMetrics(x).mean <= 1.2 + 1e-9;
+    if (!(await nudge(q, 'diffusorDichte', 0, good))) await nudge(q, 'diffusorDicke', 0.6, good);
+    return q;
+  },
+  noppen: async p => {
+    // Raster so weit vergrößern, dass die Waben mindestens 1 mm groß sind
+    const q = { ...p }, cov = p.diffusorDichte / 100;
+    q.diffusorRaster = snap('diffusorRaster', Math.ceil(1 / (2 * Math.sqrt(cov / 3)) / 0.5) * 0.5);
+    return q;
+  },
+  haubeFlach: async p => ({ ...p, diffusorHoehe: snap('diffusorHoehe', Math.max(p.diffusorHoehe, p.diffusorNoppe + 8)) }),
   dreiecke: fixTris,
   speichen: fixSpokes,
   passtBoden: p => fixByRadius(p, 'passtBoden'),
@@ -1425,8 +1487,10 @@ function updateEnabled() {
   if (P.muster !== 'geflecht') off.add('webart');
   if (!inBase || P.einsatz !== 'puck') off.add('puckD');
   if (!inBase || P.einsatz !== 'panel') ['panelB', 'panelL', 'panelEcke'].forEach(k => off.add(k));
-  if (!inBase || P.einsatz === 'fassung') ['einsatzTiefe', 'falz', 'spiel', 'diffusor', 'diffusorForm', 'diffusorDicke', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
-  if (!P.diffusor) ['diffusorForm', 'diffusorDicke', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
+  if (!inBase || P.einsatz === 'fassung') ['einsatzTiefe', 'falz', 'spiel', 'diffusor', 'diffusorForm', 'diffusorDicke', 'diffusorDichte', 'diffusorNoppe', 'diffusorRaster', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
+  if (!P.diffusor) ['diffusorForm', 'diffusorDicke', 'diffusorDichte', 'diffusorNoppe', 'diffusorRaster', 'diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
+  if (P.diffusorDichte === 0) ['diffusorNoppe', 'diffusorRaster'].forEach(k => off.add(k));
+  if (P.diffusorDichte === 100) off.add('diffusorRaster');
   if (P.diffusorForm !== 'haube') ['diffusorHoehe', 'diffusorWand'].forEach(k => off.add(k));
   if (inBase && P.einsatz !== 'fassung') ['fassungTyp', 'lochD'].forEach(k => off.add(k));
   if (P.rillenForm !== 'kissen') off.add('prallheit');
