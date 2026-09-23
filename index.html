@@ -215,8 +215,16 @@ const SCHEMA = [
   ]},
   { group: 'Geflecht', open: true, items: [
     { k: 'muster', l: 'Muster', type: 'select', def: 'geflecht', opts: [
-      ['geflecht', 'Geflecht (gekreuzt)'], ['rechts', 'Spirale rechts'], ['links', 'Spirale links'], ['strick', 'Strickmuster (horizontale Reihen)'],
+      ['geflecht', 'Geflecht (gekreuzt)'], ['rechts', 'Spirale rechts'], ['links', 'Spirale links'], ['strick', 'Strickmuster (horizontale Reihen)'], ['korb', 'Korbstruktur (Stäbe + Flechtreihen)'],
       ['keine', 'Kein Geflecht']] },
+    { k: 'korbStaebe', l: 'Korb: senkrechte Stäbe', min: 8, max: 160, step: 2, def: 40, u: '' },
+    { k: 'korbStabBreite', l: 'Korb: Stabbreite', min: 1, max: 8, step: 0.1, def: 2.4, u: 'mm' },
+    { k: 'korbStabDicke', l: 'Korb: Stabstärke', min: 1, max: 6, step: 0.1, def: 2.2, u: 'mm' },
+    { k: 'korbReihe', l: 'Korb: Reihenabstand', min: 2, max: 20, step: 0.1, def: 7, u: 'mm' },
+    { k: 'korbBand', l: 'Korb: Bandhöhe der Flechtreihe', min: 1, max: 18, step: 0.1, def: 5, u: 'mm' },
+    { k: 'korbVersatz', l: 'Korb: Versatz vor/hinter den Stäben', min: 0, max: 3, step: 0.05, def: 1, u: 'mm' },
+    { k: 'korbFolge', l: 'Korb: Flechtfolge', type: 'select', def: 'einfach', opts: [
+      ['einfach', 'Einfach (jede Reihe versetzt)'], ['doppelt', 'Doppelt (je zwei Reihen gleich)']] },
     { k: 'maschen', l: 'Strick: Maschen je Reihe', min: 20, max: 400, step: 1, def: 110, u: '' },
     { k: 'strickReihe', l: 'Strick: Reihenabstand', min: 1.5, max: 8, step: 0.1, def: 2.6, u: 'mm' },
     { k: 'strickHub', l: 'Strick: Zickzack der Reihe', min: 0, max: 3, step: 0.05, def: 0.7, u: 'mm' },
@@ -341,12 +349,24 @@ const STRICK = {
   ...WOVEN_LIGHT, muster: 'strick', maschen: 110, strickReihe: 2.6, strickHub: 0.7, strickTiefe: 0.75, strickHoehe: 2,
   strangTiefe: 1.2, hoehe: 220, radiusUnten: 78, radiusOben: 80, farbe: '#d9967a',
 };
+// Korbstruktur wie ein Rattankorb: rund und leicht bauchig, kräftige Ränder
+const KORB = {
+  ...DEFAULTS, muster: 'korb', korbStaebe: 40, korbStabBreite: 2.4, korbStabDicke: 2.2, korbReihe: 7, korbBand: 5,
+  korbVersatz: 1, korbFolge: 'einfach', strangTiefe: 1.4, hoehe: 200, radiusUnten: 80, radiusOben: 72, bauch: 12, bauchPos: 0.45,
+  randHoehe: 6, randDicke: 3, fassung: true, fassungPos: 'boden', einsatz: 'fassung', bodenDicke: 2.4, kragen: 6, nasen: 0,
+  farbe: '#c9a06a',
+};
+const KORB_PANEL = { ...WOVEN_PANEL_SOCKEL, ...SOCKEL_TEIL, muster: 'korb', korbStaebe: 48, korbStabBreite: 2.4, korbStabDicke: 2.2,
+  korbReihe: 7, korbBand: 5, korbVersatz: 1, korbFolge: 'doppelt', strangTiefe: 1.4, verdrehung: 0, kanteUnten: 3, kanteOben: 4,
+  randHoehe: 6, randDicke: 3, sockelHoehe: 45, farbe: '#c9a06a' };
 const STRICK_PANEL = { ...WOVEN_PANEL_SOCKEL, ...SOCKEL_TEIL, muster: 'strick', maschen: 130, strickReihe: 2.6, strickHub: 0.7,
   strickTiefe: 0.75, strickHoehe: 2, strangTiefe: 1.2, sockelHoehe: 45, farbe: '#d9967a' };
 
 const PRESETS = {
   'Woven Light': WOVEN_LIGHT,
   'Woven Light · Panel 120×160': WOVEN_PANEL,
+  'Korb-Lampe': KORB,
+  'Korb · Panel 120×160 · Sockel': KORB_PANEL,
   'Strick-Lampe': STRICK,
   'Strick · Panel 120×160 · Sockel': STRICK_PANEL,
   'Woven Light · Sockel getrennt': WOVEN_SOCKEL,
@@ -565,6 +585,20 @@ const OVERHANG_MAX = 55, TRIS_MAX = 1500000;
 // versetzt (Vorzeichen wechselt je Reihe): Wo die eine oben ist, ist die darüber unten, dort berühren sie sich;
 // dazwischen bleiben rautenförmige Löcher. Zusätzlich wölbt sich jede Masche auf einer Seite nach außen, auf der
 // anderen nach innen; an den Berührungspunkten ist die Wölbung null, dort liegen die Reihen genau übereinander.
+// Korbstruktur: senkrechte Stäbe an s = (j + 1/2)/n und waagerechte Flechtreihen, die abwechselnd vor und hinter
+// den Stäben laufen (radialer Versatz A·sin(π·n·s), an den Stäben genau ±A). Die Nachbarreihe läuft gegenläufig
+// (einfach) bzw. erst jede zweite (doppelt). Zwischen den Reihen bleiben Schlitze für das Licht.
+function basketGeom(p, H) {
+  const n = Math.max(2, Math.round(p.korbStaebe / 2) * 2), rows = Math.max(1, Math.round(H / p.korbReihe));
+  return { n, rows, dz: H / rows };
+}
+function basketPoint(p, surf, g, k, s) {
+  const sg = (p.korbFolge === 'doppelt' ? Math.floor(k / 2) : k) % 2 ? -1 : 1;
+  const t = (k + 0.5) * g.dz / surf.H, c = surf.S(s, t), nS = surf.normal(s, t);
+  const off = sg * p.korbVersatz * Math.sin(Math.PI * g.n * s);
+  return [[c[0] + nS[0] * off, c[1] + nS[1] * off, c[2] + nS[2] * off], nS];
+}
+
 function knitGeom(p, H) {
   const rows = Math.max(2, Math.round(H / p.strickReihe));
   return { rows, dz: H / rows, M: Math.round(p.maschen) };
@@ -582,6 +616,18 @@ function knitPoint(p, surf, g, k, s) {
 function measureOverhang(p, count = 128, segs = 480) {
   const surf = makeSurface(p), { S } = surf;
   let mxK = 0;
+  if (p.muster === 'korb') {
+    // Berühren sich die Reihen, zählt die Neigung von Reihe zu Reihe; die Stäbe laufen unten als Pfade mit
+    const g = basketGeom(p, surf.H);
+    if (p.korbBand >= g.dz) for (let i = 0; i < count; i++) {
+      let prev = basketPoint(p, surf, g, 0, i / count)[0];
+      for (let k = 1; k < g.rows; k++) {
+        const c = basketPoint(p, surf, g, k, i / count)[0], d = sub(c, prev);
+        mxK = Math.max(mxK, Math.acos(Math.min(1, Math.abs(d[2]) / (len(d) || 1))) * 180 / Math.PI);
+        prev = c;
+      }
+    }
+  }
   if (p.muster === 'strick') {
     const g = knitGeom(p, surf.H);
     for (let i = 0; i < count; i++) {
@@ -595,10 +641,11 @@ function measureOverhang(p, count = 128, segs = 480) {
     }
   }
   const waveS = p.wellenAmp / 360;
-  const dirs = p.muster === 'keine' || p.muster === 'strick' ? [] : p.muster === 'geflecht' ? (p.drehung > 0 ? [1, -1] : [1]) : p.muster === 'rechts' ? [1] : [-1];
+  const dirs = p.muster === 'keine' || p.muster === 'strick' || p.muster === 'korb' ? [] : p.muster === 'geflecht' ? (p.drehung > 0 ? [1, -1] : [1]) : p.muster === 'rechts' ? [1] : [-1];
   const paths = [];
   for (const dir of dirs) for (let i = 0; i < count; i++) paths.push([i / count, dir]);
   for (let i = 0; i < p.rippen; i++) paths.push([(i + 0.5) / p.rippen, 0]);
+  if (p.muster === 'korb') { const n = basketGeom(p, surf.H).n; for (let j = 0; j < n; j++) paths.push([(j + 0.5) / n, 0]); }
   let mx = mxK;
   for (const [s0, dir] of paths) {
     let prev = null;
@@ -628,7 +675,7 @@ function buildLampshade(p) {
   const pat = k => pattern[((k % per) + per) % per];
   let maxOverhang = 0;
 
-  const strand = (s0, idx, dir, weave) => {
+  const strand = (s0, idx, dir, weave, w = p.strangBreite, d = p.strangTiefe) => {
     const crossings = weave ? 2 * p.drehung * n : 0;
     const segs = Math.min(1600, Math.max(20, Math.round(res * Math.max(1, Math.abs(dir) * p.drehung * 1.5)), Math.ceil(crossings * 3)));
     const pts = [], nrm = [];
@@ -655,7 +702,7 @@ function buildLampshade(p) {
       nrm.push(nS);
     }
     const { N, B } = frames(pts, nrm);
-    mb.addTube(pts, N, B, p.strangBreite, p.strangTiefe, false);
+    mb.addTube(pts, N, B, w, d, false);
   };
 
   // Ring entlang des Querschnitts, senkrechtes Rechteckprofil
@@ -688,8 +735,26 @@ function buildLampshade(p) {
     }
   }
 
+  // Korbstruktur: Stäbe und geschlossene Flechtreihen
+  const basket = p.muster === 'korb' ? basketGeom(p, H) : null;
+  if (basket) {
+    for (let j = 0; j < basket.n; j++) strand((j + 0.5) / basket.n, 0, 0, false, p.korbStabBreite, p.korbStabDicke);
+    const segs = basket.n * 12;
+    for (let k = 0; k < basket.rows; k++) {
+      const pts = [], nrm = [];
+      for (let i = 0; i < segs; i++) { const [c, nS] = basketPoint(p, surf, basket, k, i / segs); pts.push(c); nrm.push(nS); }
+      const N = [], B = [];
+      for (let i = 0; i < segs; i++) {
+        const t = norm(sub(pts[(i + 1) % segs], pts[(i - 1 + segs) % segs])), s = nrm[i], d = dot(s, t);
+        const nn = norm([s[0] - t[0] * d, s[1] - t[1] * d, s[2] - t[2] * d]);
+        N.push(nn); B.push(cross(t, nn));
+      }
+      mb.addTube(pts, N, B, p.korbBand, p.strangTiefe, true);
+    }
+  }
+
   // Geflecht
-  if (p.muster !== 'keine' && !knit) {
+  if (p.muster !== 'keine' && !knit && !basket) {
     const dirs = p.muster === 'geflecht' ? (p.drehung > 0 ? [1, -1] : [1])
                : p.muster === 'rechts' ? [1] : [-1];
     for (const dir of dirs)
@@ -699,7 +764,8 @@ function buildLampshade(p) {
   for (let i = 0; i < p.rippen; i++) strand((i + 0.5) / p.rippen, 0, 0, false);
 
   // Zwischenringe
-  const ringThick = p.strangTiefe + (weaveOn ? 2 * p.webTiefe : 0) + (knit ? 2 * p.strickTiefe : 0);
+  const ringThick = Math.max(p.strangTiefe + (weaveOn ? 2 * p.webTiefe : 0) + (knit ? 2 * p.strickTiefe : 0) + (basket ? 2 * p.korbVersatz : 0),
+    basket ? p.korbStabDicke : 0);
   for (let k = 1; k <= p.zwischenRinge; k++) {
     const t = k / (p.zwischenRinge + 1);
     ring(t, p.strangBreite, ringThick);
@@ -787,6 +853,12 @@ function buildLampshade(p) {
     warnings.push(W('ueberhang', `Stränge sind bis zu ${maxOverhang.toFixed(0)}° geneigt. Ab etwa ${OVERHANG_MAX}° wird der Druck ohne Stützen unsauber.`));
   if (p.strangBreite < 1.2 || p.strangTiefe < 1)
     warnings.push(W('fein', 'Sehr feine Stränge: Mit 0,4-mm-Düse langsam drucken und Linienbreite im Slicer prüfen.'));
+  if (basket && p.korbVersatz > (p.strangTiefe + p.korbStabDicke) / 2 - 0.3)
+    warnings.push(W('korbLose', 'Die Flechtreihen berühren die Stäbe kaum. Versatz verkleinern oder Stäbe bzw. Bänder dicker machen.'));
+  if (basket && p.korbBand < basket.dz) {
+    const gap = surf.shape.perimeterUnit * Math.max(p.radiusUnten, p.radiusOben, R(0.5)) / basket.n - p.korbStabBreite;
+    if (gap > 15) warnings.push(W('korbBruecke', `Zwischen den Stäben hängt jede Reihe ${gap.toFixed(0)} mm frei. Über 15 mm wird die Brücke beim Druck unsauber. Mehr Stäbe verwenden.`));
+  }
   if (knit && p.strickHoehe - (knit.dz - 2 * p.strickHub) < 0.3)
     warnings.push(W('strickLose', `Die Strickreihen berühren sich kaum (Überlappung ${(p.strickHoehe - (knit.dz - 2 * p.strickHub)).toFixed(1).replace('.', ',')} mm, nötig mind. 0,3 mm). Fadenhöhe oder Zickzack erhöhen.`));
   if (knit && p.strickHoehe >= knit.dz + 2 * p.strickHub)
@@ -811,6 +883,8 @@ function buildLampshade(p) {
       width: diff.width, length: diff.length, grams: diff.mb.volume / 1000 * 1.24, metrics: diff.metrics, extra: diffuserMetrics(p).depth } : null,
     stats: { H, width: 2 * maxX, depth: 2 * maxY, volume: mb.volume + (base ? base.volume : 0), tris, maxOverhang, maxR,
       baseH: base ? p.sockelHoehe : 0, lip, strands: n,
+      basket: basket ? { n: basket.n, rows: basket.rows, gap: Math.max(0, basket.dz - p.korbBand),
+        span: surf.shape.perimeterUnit * R(0.5) / basket.n - p.korbStabBreite } : null,
       knit: knit ? { rows: knit.rows, M: knit.M, dz: knit.dz, stitch: surf.shape.perimeterUnit * R(0.5) / knit.M,
         hole: Math.max(0, knit.dz + 2 * p.strickHub - p.strickHoehe) } : null },
     warnings,
@@ -1313,6 +1387,8 @@ function renderStats() {
     ['Höhe', (s.H + s.baseH).toFixed(0) + ' mm' + (s.baseH ? ` (Schirm ${s.H.toFixed(0)})` : '')],
     ['Breite × Tiefe', `${s.width.toFixed(0)} × ${s.depth.toFixed(0)} mm`],
     ['Druckteile', ['Schirm', s.baseH && 'Sockel', current.diffuser && 'Diffusor'].filter(Boolean).join(' + ')],
+    ...(s.basket ? [['Korbstruktur', `${s.basket.n} Stäbe × ${s.basket.rows} Reihen`],
+      ['Schlitz / Brücke', `${fmt(s.basket.gap)} mm hoch, ${fmt(s.basket.span)} mm zwischen den Stäben`]] : []),
     ...(s.knit ? [['Strickmuster', `${s.knit.M} Maschen × ${s.knit.rows} Reihen`],
       ['Masche / Loch', `${fmt(s.knit.stitch)} mm breit, Loch bis ${fmt(s.knit.hole)} mm hoch`]] : []),
     ['Dreiecke', s.tris.toLocaleString('de-DE')],
@@ -1351,6 +1427,7 @@ function estimateTris(p) {
   const per = (WEBART[p.webart] || WEBART.leinwand).length;
   const weaveOn = p.muster === 'geflecht' && p.drehung > 0 && p.webTiefe > 0;
   const n = weaveOn ? Math.ceil(p.straenge / per) * per : p.straenge;
+  if (p.muster === 'korb') { const g = basketGeom(p, p.hoehe); return g.rows * g.n * 12 * 8 + g.n * (p.aufloesung * 8 + 4) + 150000; }
   if (p.muster === 'strick') return Math.round(p.hoehe / p.strickReihe) * p.maschen * 8 * 8 + p.rippen * (p.aufloesung * 8 + 4) + 150000;
   const dirs = p.muster === 'keine' ? 0 : p.muster === 'geflecht' && p.drehung > 0 ? 2 : 1;
   const crossings = weaveOn ? 2 * p.drehung * n : 0;
@@ -1382,12 +1459,12 @@ async function fixOverhang(p) {
   const good = x => measureOverhang(x, 64, 360) <= target;
   if (good(q)) return q;
   // Reihenfolge: zuerst was den Look am wenigsten verändert
-  const knit = p.muster === 'strick';
+  const knit = p.muster === 'strick', korb = p.muster === 'korb';
   const steps = [
-    ...(knit ? [['strickTiefe', 0.2]] : [['drehung', Math.max(0.1, p.drehung * 0.5)]]),
+    ...(knit ? [['strickTiefe', 0.2]] : korb ? [['korbVersatz', 0.3]] : [['drehung', Math.max(0.1, p.drehung * 0.5)]]),
     ['verdrehung', 0], ['wellenAmp', 0],
     ['kanteUnten', 0], ['kanteOben', 0], ['prallheit', 0], ['rillenAmp', 0],
-    ...(knit ? [['strickTiefe', 0]] : [['drehung', 0.1]]), ['bauch', 0], ['hoehe', 400],
+    ...(knit ? [['strickTiefe', 0]] : korb ? [['korbVersatz', 0]] : [['drehung', 0.1]]), ['bauch', 0], ['hoehe', 400],
   ];
   for (const [k, lim] of steps) {
     const before = measureOverhang(q, 64, 360), old = q[k];
@@ -1448,6 +1525,12 @@ const FIXES = {
   // Fadenhöhe so, dass sich Nachbarreihen um 0,5 mm überlappen
   strickLose: async p => { const g = knitGeom(p, p.hoehe); return { ...p, strickHoehe: snap('strickHoehe', Math.ceil((g.dz - 2 * p.strickHub + 0.5) * 10) / 10) }; },
   // Fadenhöhe so, dass die Löcher etwa 0,6 mm hoch bleiben, aber die Reihen sich weiter überlappen
+  korbLose: async p => ({ ...p, korbVersatz: snap('korbVersatz', Math.floor(((p.strangTiefe + p.korbStabDicke) / 2 - 0.4) / 0.05) * 0.05) }),
+  korbBruecke: async p => {
+    // So viele Stäbe (gerade Zahl), dass zwischen ihnen höchstens 12 mm frei bleiben
+    const surf = makeSurface(p), per = surf.shape.perimeterUnit * Math.max(p.radiusUnten, p.radiusOben, surf.R(0.5));
+    return { ...p, korbStaebe: snap('korbStaebe', Math.ceil(per / (12 + p.korbStabBreite) / 2) * 2) };
+  },
   strickZu: async p => { const g = knitGeom(p, p.hoehe); return { ...p, strickHoehe: snap('strickHoehe', Math.floor((g.dz + 2 * p.strickHub - 0.6) * 10) / 10) }; },
   sockelFehlt: async p => ({ ...p, sockel: true }),
   einsatzPos: async p => ({ ...p, fassungPos: p.sockel ? 'sockel' : 'boden' }),
@@ -1613,9 +1696,10 @@ function updateEnabled() {
   if (inBase && P.einsatz !== 'fassung') ['fassungTyp', 'lochD'].forEach(k => off.add(k));
   if (P.rillenForm !== 'kissen') off.add('prallheit');
   if (P.rillenAmp === 0) off.add('prallheit');
-  if (P.muster === 'keine' || P.muster === 'strick') ['straenge', 'drehung', 'webTiefe', 'wellenAmp', 'wellenFreq'].forEach(k => off.add(k));
-  if (P.muster === 'strick') ['strangBreite'].forEach(k => off.add(k));
-  else ['maschen', 'strickReihe', 'strickHub', 'strickTiefe', 'strickHoehe'].forEach(k => off.add(k));
+  if (P.muster === 'keine' || P.muster === 'strick' || P.muster === 'korb') ['straenge', 'drehung', 'webTiefe', 'wellenAmp', 'wellenFreq'].forEach(k => off.add(k));
+  if (P.muster === 'strick' || P.muster === 'korb') off.add('strangBreite');
+  if (P.muster !== 'strick') ['maschen', 'strickReihe', 'strickHub', 'strickTiefe', 'strickHoehe'].forEach(k => off.add(k));
+  if (P.muster !== 'korb') ['korbStaebe', 'korbStabBreite', 'korbStabDicke', 'korbReihe', 'korbBand', 'korbVersatz', 'korbFolge'].forEach(k => off.add(k));
   if (P.muster !== 'geflecht') off.add('webTiefe');
   if (P.wellenAmp === 0) off.add('wellenFreq');
   if (P.rillenAmp === 0) off.add('rillenAnzahl');
