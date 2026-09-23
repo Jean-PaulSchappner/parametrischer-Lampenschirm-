@@ -150,6 +150,7 @@
     <div class="toolbar">
       <button class="btn" id="btnLight">Licht an</button>
       <button class="btn" id="btnCam">Ansicht</button>
+      <button class="btn" id="btnExplode" hidden>Zerlegt</button>
       <button class="btn primary" id="btnStl">STL Schirm</button>
       <button class="btn primary" id="btnStlBase" hidden>STL Sockel</button>
     </div>
@@ -227,7 +228,7 @@ const SCHEMA = [
     { k: 'fassung', l: 'Halter für Leuchtmittel', type: 'check', def: true },
     { k: 'fassungPos', l: 'Position', type: 'select', def: 'oben', opts: [
       ['oben', 'Speichen oben im Schirm (Pendelleuchte)'], ['unten', 'Speichen unten im Schirm'],
-      ['boden', 'Boden im Schirm (Tischleuchte)'], ['sockel', 'Im Sockel']] },
+      ['boden', 'Boden fest im Schirm (ein Teil)'], ['sockel', 'Im Sockel (eigenes Teil, getrennt drucken)']] },
     { k: 'einsatz', l: 'Leuchtmittel', type: 'select', def: 'fassung', opts: [
       ['fassung', 'Lampenfassung (E27/E14/GU10)'], ['puck', 'LED-Puck (rund)'], ['panel', 'LED-Panel (rechteckig)']] },
     { k: 'bodenDicke', l: 'Bodenstärke', min: 1.2, max: 6, step: 0.1, def: 2.4, u: 'mm' },
@@ -303,9 +304,17 @@ const WOVEN_PANEL = {
   einsatz: 'panel', panelB: 120, panelL: 160, panelEcke: 2, einsatzTiefe: 4, falz: 4,
 };
 
+// Dieselben Lampen mit getrenntem Sockel: Schirm und Sockel sind zwei Teile, der Schirmrand steckt in der Nut des Sockels.
+// Im hohlen Sockel ist Platz für Fassungskörper, Treiber und Kabel; das Kabel läuft durch den Schlitz in der Wand.
+const SOCKEL_TEIL = { fassungPos: 'sockel', sockel: true, sockelUeberstand: 2, sockelWand: 2.4, sockelDeck: 3.2, kabelD: 8, kanteUnten: 3 };
+const WOVEN_SOCKEL = { ...WOVEN_LIGHT, ...SOCKEL_TEIL, sockelHoehe: 60 };
+const WOVEN_PANEL_SOCKEL = { ...WOVEN_PANEL, ...SOCKEL_TEIL, sockelHoehe: 45 };
+
 const PRESETS = {
   'Woven Light': WOVEN_LIGHT,
   'Woven Light · Panel 120×160': WOVEN_PANEL,
+  'Woven Light · Sockel getrennt': WOVEN_SOCKEL,
+  'Panel 120×160 · Sockel getrennt': WOVEN_PANEL_SOCKEL,
   'Mesh Tischlampe': MESH_LAMPE,
   'Kissen-Stapel': KISSEN,
   'Mesh mit LED-Panel': { ...MESH_LAMPE, einsatz: 'panel', panelB: 90, panelL: 90, panelEcke: 3, einsatzTiefe: 3 },
@@ -872,6 +881,7 @@ ledPuck.rotation.x = Math.PI / 2;
 lampGroup.add(ledPanel, ledPuck);
 
 let night = false;
+let exploded = false;
 let current = null;
 let firstFrame = true;
 
@@ -880,7 +890,8 @@ function applyScene() {
   const size = Math.max(totalH, s.width, s.depth);
   const lift = night && !s.baseH && P.fassungPos !== 'boden' ? H * 0.9 : 0;
   lampGroup.position.z = lift;
-  shade.position.z = s.baseH ? s.baseH - 1.6 : 0; // Schirmrand sitzt in der Nut des Sockels
+  // Schirmrand sitzt in der Nut des Sockels; zerlegt schwebt der Schirm darüber
+  shade.position.z = s.baseH ? s.baseH - 1.6 + (exploded ? Math.max(40, H * 0.3) : 0) : 0;
 
   scene.background = new THREE.Color(night ? 0x0b0907 : 0x2a241d);
   hemi.visible = sun.visible = floor.visible = grid.visible = !night;
@@ -924,7 +935,7 @@ function applyScene() {
 }
 
 function frameCamera() {
-  const s = current.stats, totalH = s.H + s.baseH, size = Math.max(totalH, s.width, s.depth);
+  const s = current.stats, totalH = s.H + s.baseH + (exploded && s.baseH ? Math.max(40, s.H * 0.3) : 0), size = Math.max(totalH, s.width, s.depth);
   const cz = lampGroup.position.z + totalH / 2;
   controls.target.set(0, 0, cz);
   const dist = night ? Math.min(size * 2.4, Math.max(s.maxR * 7, totalH * 3.2) * 0.85) : size * 2.4;
@@ -979,6 +990,7 @@ function doRebuild() {
   renderStats();
   syncHash();
   document.getElementById('btnStlBase').hidden = !current.base;
+  document.getElementById('btnExplode').hidden = !current.base;
   busy.classList.remove('show');
 }
 
@@ -988,6 +1000,7 @@ function renderStats() {
   const rows = [
     ['Höhe', (s.H + s.baseH).toFixed(0) + ' mm' + (s.baseH ? ` (Schirm ${s.H.toFixed(0)})` : '')],
     ['Breite × Tiefe', `${s.width.toFixed(0)} × ${s.depth.toFixed(0)} mm`],
+    ['Druckteile', s.baseH ? '2 (Schirm + Sockel)' : '1 (Schirm)'],
     ['Dreiecke', s.tris.toLocaleString('de-DE')],
     ['Filament (PLA)', 'ca. ' + grams.toFixed(0) + ' g'],
   ];
@@ -1059,6 +1072,12 @@ function set(k, v) {
     if (v && P.fassungPos !== 'sockel') P.fassungPos = 'sockel';
     if (!v && P.fassungPos === 'sockel') P.fassungPos = 'boden';
     inputs.fassungPos.set(P.fassungPos);
+  }
+  // „Im Sockel“ braucht den Sockel; „Boden fest im Schirm“ ersetzt ihn
+  if (k === 'fassungPos') {
+    if (v === 'sockel' && !P.sockel) P.sockel = true;
+    if (v === 'boden' && P.sockel) P.sockel = false;
+    inputs.sockel.set(P.sockel);
   }
   updateEnabled();
   rebuild();
@@ -1168,6 +1187,11 @@ for (const name of Object.keys(PRESETS)) {
 document.getElementById('btnRandom').onclick = randomize;
 document.getElementById('btnReset').onclick = () => { applyAll(WOVEN_LIGHT); firstFrame = true; };
 document.getElementById('btnCam').onclick = frameCamera;
+document.getElementById('btnExplode').onclick = e => {
+  exploded = !exploded;
+  e.target.textContent = exploded ? 'Zusammen' : 'Zerlegt';
+  applyScene(); frameCamera();
+};
 document.getElementById('btnLight').onclick = e => {
   night = !night;
   e.target.textContent = night ? 'Licht aus' : 'Licht an';

@@ -27,6 +27,7 @@ Die aktuellen Einstellungen stehen in der Adresszeile. Mit „Link kopieren“ l
 ## Druckhinweise
 
 - Der Export ist eine binäre STL in Millimetern. Die Stränge durchdringen sich an den Kreuzungen. Bambu Studio, PrusaSlicer und Cura vereinen das beim Slicen automatisch.
+- Schirm und Sockel sind zwei getrennte Druckteile. Bei „Boden fest im Schirm“ ist es ein Teil, bei „Im Sockel (eigenes Teil, getrennt drucken)“ sind es zwei; die Vorlagen „Woven Light · Sockel getrennt“ und „Panel 120×160 · Sockel getrennt“ sind fertig eingestellt. Der Knopf „Zerlegt“ hebt den Schirm in der Vorschau vom Sockel ab. Im hohlen Sockel ist Platz für Fassungskörper, Treiber und Kabel, das Kabel läuft durch den Schlitz in der Sockelwand.
 - Schirm und Sockel werden getrennt exportiert („STL Schirm“, „STL Sockel“). Der Sockel wird kopfüber ausgegeben: Der Deckel liegt auf dem Druckbett, die Wand wächst nach oben, so braucht er keine Stützen.
 - Die Mesh-Vorlagen haben über 500.000 Dreiecke. Stränge von 1,5 × 1,1 mm mit 0,4-mm-Düse und eher langsam drucken.
 - Mit Fassung oben wird die Datei beim Export umgedreht, damit Speichen und Ring flach auf dem Druckbett liegen.
