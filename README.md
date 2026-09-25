@@ -1,45 +1,76 @@
 # Lampenschirm Studio
 
-Parametrischer Geflecht-Lampenschirm für den 3D-Druck. Die Idee stammt vom „Woven Light Mesh“-Modell auf MakerWorld: gekreuzte Spiralstränge, die abwechselnd über- und untereinander laufen, dazu Ränder und ein Fassungshalter.
+Web-App zum Gestalten parametrischer Lampenschirme für den 3D-Druck: Geflecht, Strickmuster oder Korbstruktur auf einer frei einstellbaren oder aus einer STL gelernten Form, mit Sockel, Fassung oder LED-Panel und Diffusor. Dazu eine gleichwertige OpenSCAD-Fassung für den Parametric Model Maker von MakerWorld.
 
 ## Starten
 
 `index.html` im Browser öffnen (Chrome, Edge oder Firefox). Eine Internetverbindung ist nötig, weil Three.js und die Schriften per CDN geladen werden. Eine Installation ist nicht nötig.
 
-## Parameter
+## Ordner
 
-| Gruppe | Was sich einstellen lässt |
+| Pfad | Inhalt |
 |---|---|
-| Form | Höhe, Radius unten/oben, Wölbung (bauchig oder tailliert) mit Position, Wellen-Rillen oder gestapelte Kissen-Etagen (Tiefe, Anzahl, Prallheit), Kante oben/unten abrunden (höchstens 35° Neigung) |
-| Querschnitt & Verdrehung | Rund oder abgerundetes Drei- bis Achteck, Eckigkeit, Seitenverhältnis (rechteckiger Querschnitt), Verdrehung über die Höhe (gleichmäßig, S-Kurve, hin und zurück oder als Falte auf eine Zone konzentriert, mit Höhe und Breite der Falte) |
-| Geflecht | Muster (gekreuzt, Spirale rechts/links, Strickmuster, Korbstruktur, keins). Korbstruktur: senkrechte Stäbe, durch die waagerechte Flechtbänder abwechselnd vorne und hinten laufen (einfach oder doppelt versetzt); einstellbar sind Anzahl, Breite und Stärke der Stäbe, Reihenabstand, Bandhöhe und Versatz. Strickmuster: horizontale Reihen im Zickzack, Nachbarreihen um eine halbe Masche versetzt, dazwischen rautenförmige Löcher; einstellbar sind Maschen je Reihe, Reihenabstand, Zickzack, Wölbung der Maschen und Fadenhöhe. Sonst: Anzahl der Stränge, Drehung in Umdrehungen, Strangbreite und -stärke, Webart (Leinwand, Köper 2/2, Köper 2/1), Webversatz (über/unter), seitliche Wellen |
+| `index.html` | Die App (eine Datei, enthält auch die OpenSCAD-Vorlage für den Export) |
+| `makerworld/lampenschirm.scad` | Parametrisches OpenSCAD-Modell, gleiches Ergebnis wie die App |
+| `makerworld/BESCHREIBUNG.md`, `makerworld/bilder/` | Texte, Bilder und Schritte für die Veröffentlichung auf MakerWorld |
+| `tests/pruefen.mjs` | Prüft Vorlagen, Passungen, Korrekturen, STL-Lernen und die OpenSCAD-Fassung |
+| `werkzeuge/` | Hilfsskripte für die OpenSCAD-Vorlage |
+
+## Was sich einstellen lässt
+
+| Gruppe | Einstellungen |
+|---|---|
+| Grundform | Parametrisch oder aus einer hochgeladenen STL gelernt; Größe, Mischung mit der parametrischen Form, Glättung |
+| Form | Höhe, Radius unten/oben, Wölbung mit Position, Wellen-Rillen oder gestapelte Kissen-Etagen (Tiefe, Anzahl, Prallheit), Kanten oben/unten abrunden (höchstens 35° Neigung) |
+| Querschnitt & Drehung | Rund oder abgerundetes Drei- bis Achteck, Eckigkeit, Seitenverhältnis; Unter- und Oberkante einzeln drehen; zusätzliche Verdrehung (gleichmäßig, S-Kurve, hin und zurück oder als Falte mit Höhe und Breite) |
+| Muster | Gekreuztes Geflecht (Leinwand, Köper 2/2, Köper 2/1, Webversatz, seitliche Wellen), Spirale, Strickmuster (Maschen, Reihenabstand, Zickzack, Wölbung, Fadenhöhe), Korbstruktur (Stäbe, Bänder, Versatz, einfach/doppelt), keins |
 | Stabilität | Senkrechte Rippen, Zwischenringe, Höhe und Stärke der Ränder |
-| Leuchtmittel & Fassung | Speichen oben oder unten im Schirm, Boden im Schirm (Platte mit Kragen um die Fassung und Aussparungen im Loch) oder im Sockel. Bei Boden und Sockel wahlweise Lampenfassung (E27/E14/GU10 oder eigenes Lochmaß), runder LED-Puck (Durchmesser) oder rechteckiges LED-Panel (Breite, Länge, Eckenradius). Puck und Panel liegen in einer Vertiefung mit Auflagekante; Einlasstiefe = Dicke des Leuchtmittels. Im Schirm: Ringbreite, Anzahl, Breite und Höhe der Speichen |
-| Sockel | Hohler Sockel mit Fassungsloch im Deckel, Nut für den Schirmrand und Kabelschlitz; Höhe, Überstand, Wand- und Deckelstärke, Einstecktiefe der Schirmlippe (1,6–25 mm): Der Schirm bekommt unten ein geschlossenes Band, das so tief in eine Nut mit Wänden im Sockel greift |
-| Export | Farbe der Vorschau, Auflösung, Drehen für den Druck |
+| Leuchtmittel | Speichen oben/unten im Schirm, Boden fest im Schirm oder im Sockel; Fassung E27/E14/GU10 (mit Kragen und Aussparungen), LED-Puck oder LED-Panel mit Einlasstiefe, Auflagekante und Passungsspiel; Diffusor als Platte oder Haube, bündig versenkt, Dichte über eine Wabenstruktur |
+| Sockel | Höhe, Überstand, Wand, Deckel, Kabelschlitz, Einstecktiefe der Schirmlippe (1,6–25 mm) |
+| Darstellung & Export | Farbe, Auflösung, Umdrehen für den Druck |
 
-Vorlagen: Korb-Lampe und Korb · Panel 120×160 · Sockel (Korbstruktur wie ein Rattankorb), Strick-Lampe und Strick · Panel 120×160 · Sockel (horizontales Strickmuster wie auf den Fotos), Woven Light (Startzustand, nachgebaut nach dem MakerWorld-Modell: dichtes Leinwandgeflecht, Falte im unteren Drittel, abgerundete Kanten, Boden mit E27-Kragen), Woven Light · Panel 120×160 (gleiche Lampe mit gestrecktem Querschnitt, LED-Panel 120 × 160 mm liegt im Rahmen auf dem Boden), Mesh Tischlampe ( feines Geflecht, abgerundetes Viereck, 40° verdreht, mit Sockel), Kissen-Stapel (vier gestapelte Kissen, LED-Puck im Sockel), Mesh mit LED-Panel, Mesh Kelch, Woven Mesh, Propeller, Diamant, Tulpe, Welle, Käfig, Kugel. „Zufall“ erzeugt Varianten, deren Überhang druckbar bleibt.
+Vorlagen: Woven Light (Start), Woven Light · Panel 120×160, Woven Light · Mitte gedreht, Korb-Lampe, Korb · Panel 120×160 · Sockel, Strick-Lampe, Strick · Panel 120×160 · Sockel, Woven Light · Sockel getrennt, Panel 120×160 · Sockel getrennt, Mesh Tischlampe, Kissen-Stapel, Mesh mit LED-Panel, Mesh Kelch, Woven Mesh, Propeller, Diamant, Tulpe, Welle, Käfig, Kugel. „Zufall“ erzeugt Varianten mit druckbarem Überhang.
 
-„Licht an“ zeigt den Schirm in einem dunklen Raum mit Glühbirne und den Schatten des Musters an der Wand.
+„Licht an“ zeigt die Lampe im dunklen Raum mit dem Schattenmuster an der Wand, „Zerlegt“ hebt den Schirm vom Sockel ab.
 
-Die aktuellen Einstellungen stehen in der Adresszeile. Mit „Link kopieren“ lässt sich ein Entwurf weitergeben. Parameter lassen sich außerdem als JSON speichern und wieder laden.
+Die Einstellungen stehen in der Adresszeile („Link kopieren“) und lassen sich als JSON speichern und laden. Eine gelernte Form wird in der JSON-Datei mitgespeichert.
+
+## Formen aus STL lernen
+
+In der Gruppe „Grundform“ eine STL hochladen (Vase, Lampe, Flasche …) und die Hochachse wählen. Die App schneidet das Modell in 64 waagerechte Scheiben und misst in jeder Scheibe in 144 Richtungen den äußersten Punkt der Außenhaut. Richtungen ohne Treffer, etwa durch die Löcher eines Gitters, werden aus den Nachbarn ergänzt. Das Ergebnis ist ein Radiusfeld, das als Grundform dient:
+
+- Alle Muster, Drehungen, Kantenrundungen, Wölbungen, Sockel, Fassungen, Panels und Diffusoren funktionieren darauf.
+- „Mischung mit parametrischer Form“ blendet zwischen gelernter und eingestellter Form über und erzeugt so neue Formen.
+- Die gelernten Formen bleiben im Browser gespeichert („Formbibliothek“) und lassen sich als Datei sichern und laden.
+
+Geeignet sind Formen, die von der Mitte aus gesehen keine Hinterschneidungen haben (jede Richtung trifft die Außenhaut einmal). Innenteile wie Böden oder Fassungsringe stören nicht, es zählt der äußerste Punkt. Bei Gittermodellen liegt die gelernte Fläche auf der Außenseite der Stränge, also etwa 0,5 bis 1 mm außerhalb ihrer Mitte.
+
+## OpenSCAD und MakerWorld
+
+„OpenSCAD für MakerWorld exportieren“ schreibt den aktuellen Entwurf als `.scad`-Datei: alle Werte als Voreinstellungen der Regler, eine gelernte Form als Radiusfeld. Die Datei läuft ab OpenSCAD 2021.01 und im Parametric Model Maker von MakerWorld. Über den Regler `teil` entstehen Schirm, Sockel (kopfüber) oder Diffusor, `ansicht` zeigt alles zusammengebaut.
+
+Die OpenSCAD-Fassung rechnet genau wie die App: Maße, Volumen und Dreieckszahl stimmen bei allen geprüften Vorlagen überein. Jedes Teil ist ein einzelnes Netz ohne Boolesche Vereinigung. Rechenzeit mit OpenSCAD 2021.01 bei Ausgabe als 3MF: Schirm mit 150 Strängen je Richtung 13 s, Sockel 1 s. Als Text-STL braucht OpenSCAD 2021 deutlich länger (rund 100 s für denselben Schirm).
+
+Veröffentlichen: siehe `makerworld/BESCHREIBUNG.md`. Wurde `makerworld/lampenschirm.scad` geändert, danach `node werkzeuge/scad-einbetten.mjs` ausführen, damit der Export der App dieselbe Vorlage benutzt. `node werkzeuge/makerworld-paket.mjs "Vorlagenname"` setzt die Voreinstellungen der Datei auf eine Vorlage der App.
+
+## Prüfen
+
+```
+node tests/pruefen.mjs
+OPENSCAD="C:/Pfad/zu/openscad.com" node tests/pruefen.mjs
+```
+
+Geprüft werden: alle Vorlagen ohne Warnung und mit geschlossenen Teilen; die Passung von Panel, Puck, Diffusor und Schirmlippe im Netz nachgemessen; alle automatischen Korrekturen; das Lernen aus STL (Genauigkeit gegen die bekannte Form); mit gesetztem `OPENSCAD` zusätzlich der Vergleich App ↔ OpenSCAD für zehn Teile.
 
 ## Druckhinweise
 
-- Der Export ist eine binäre STL in Millimetern. Die Stränge durchdringen sich an den Kreuzungen. Bambu Studio, PrusaSlicer und Cura vereinen das beim Slicen automatisch.
-- Schirm und Sockel sind zwei getrennte Druckteile. Bei „Boden fest im Schirm“ ist es ein Teil, bei „Im Sockel (eigenes Teil, getrennt drucken)“ sind es zwei; die Vorlagen „Woven Light · Sockel getrennt“ und „Panel 120×160 · Sockel getrennt“ sind fertig eingestellt. Der Knopf „Zerlegt“ hebt den Schirm in der Vorschau vom Sockel ab. Im hohlen Sockel ist Platz für Fassungskörper, Treiber und Kabel, das Kabel läuft durch den Schlitz in der Sockelwand.
-- Schirm und Sockel werden getrennt exportiert („STL Schirm“, „STL Sockel“). Der Sockel wird kopfüber ausgegeben: Der Deckel liegt auf dem Druckbett, die Wand wächst nach oben, so braucht er keine Stützen.
-- Die Mesh-Vorlagen haben über 500.000 Dreiecke. Stränge von 1,5 × 1,1 mm mit 0,4-mm-Düse und eher langsam drucken.
-- Mit Fassung oben wird die Datei beim Export umgedreht, damit Speichen und Ring flach auf dem Druckbett liegen.
-- Neben jeder roten Warnung steht „Korrigieren“, bei mehreren zusätzlich „Alles korrigieren“. Die Korrektur ändert nur die Werte, die das Problem verursachen, und so wenig wie nötig. Anschließend prüft sie, dass die Warnung weg ist und keine neue entstanden ist. Welche Werte sich geändert haben, steht danach kurz oben im Bild. Beim Überhang wird zuerst die Drehung gesenkt, erst danach Verdrehung, Wellen, Kantenrundung, Kissen und Wölbung. Passt ein Leuchtmittel nicht, wird der Schirm unten breiter.
-- Die Anzeige unten links warnt, wenn Stränge steiler als etwa 55° geneigt sind, der Webversatz die Stränge trennt oder die Stränge zu dünn für eine 0,4-mm-Düse sind.
-- Strickmuster: Die Reihen müssen sich an den Berührungspunkten mindestens 0,3 mm überlappen, sonst warnt das Programm (Korrektur: Fadenhöhe erhöhen). Liegen sie lückenlos aufeinander, kommt kaum Licht durch (Korrektur: Fadenhöhe senken). Beim Überhang zählt die Neigung von Reihe zu Reihe, also Wandneigung plus Wölbung der Maschen.
-- Korbstruktur: Zwischen den Stäben hängt jede Flechtreihe als Brücke frei. Über 15 mm warnt das Programm (Korrektur: mehr Stäbe, höchstens 12 mm frei). Ist der Versatz so groß, dass die Bänder die Stäbe kaum berühren, wird er verkleinert.
-- Die Überhangprüfung misst den Verlauf der Stränge ohne den Webversatz. Der Versatz verschiebt jede Schicht nur um Bruchteile eines Millimeters.
-- Webmuster gehen nur rundum auf, wenn die Strangzahl zur Webart passt. Das Programm rundet die Strangzahl deshalb bei Bedarf auf (Leinwand: gerade Zahl, Köper 2/2: Vielfaches von 4, Köper 2/1: Vielfaches von 3).
-- Diffusor (bei Puck und Panel): eigenes Druckteil, Knopf „STL Diffusor“. „Flache Platte“ liegt bündig im Einlass auf dem Panel; „Haube“ ist ein offener Kasten, dessen Wand im Einlass auf dem Panelrand steht und dessen Deckfläche mit Abstand über dem Panel liegt. Der Einlass wird automatisch um die Diffusorstärke tiefer. Die Deckfläche liegt beim Druck auf dem Bett, keine Stützen nötig. In Weiß oder Natur (PLA/PETG) mit 0,6–1,2 mm Stärke und 100 % Füllung drucken.
-- „Diffusor bündig versenken“: Der Einlass wird so tief wie Panel plus ganzer Diffusor (auch die Haube), die Deckfläche des Diffusors schließt exakt mit der Sockeloberfläche ab. Ist der Sockel dafür zu niedrig, erscheint eine Warnung mit Korrektur (Sockel höher).
-- Diffusor-Dichte: Die Grundschicht ist immer geschlossen, die LEDs sieht man also nie direkt. Die Dichte (0–100 %) legt fest, welcher Flächenanteil auf der Innenseite zusätzlich eine Wabe aus Sechseck-Noppen trägt (Zusatzstärke und Raster einstellbar). 0 % = nur Grundschicht, am hellsten; 100 % = überall Grundschicht plus Zusatzstärke, streut am stärksten. Die Außenseite bleibt glatt, die Waben wachsen beim Druck nach oben. Bei der flachen Platte wird der Einlass um Grundschicht plus Zusatzstärke tiefer, damit der Diffusor bündig bleibt. Am Rand bleiben 0,6 mm ohne Waben.
-- Maße von Panel und Puck als Nennmaß eintragen. Der Einlass ist genau um das „Passungsspiel je Seite“ größer (Standard 0,2 mm, auch an den Ecken). Der Diffusor hat exakt das Nennmaß des Panels. Die Anzeige unten links zeigt die Maße von Einlass und Diffusor. Durch die Öffnung innerhalb der Auflagekante läuft das Kabel nach unten.
-- Das Lochmaß für die Fassung erst mit einem kleinen Probedruck prüfen. Fassungsringe unterscheiden sich je nach Hersteller.
+- Export als binäre STL in Millimetern. Die Stränge durchdringen sich an den Kreuzungen; Bambu Studio, PrusaSlicer und Cura vereinen das beim Slicen.
+- Keine Stützen nötig, solange die Anzeige grün ist. Neben jeder roten Warnung steht „Korrigieren“ (bei mehreren „Alles korrigieren“). Die Korrektur ändert nur die verursachenden Werte, so wenig wie nötig, und prüft danach, dass keine neue Warnung entsteht.
+- Überhang: gemessen wird der Verlauf der Stränge ohne den Webversatz, Grenze etwa 55°. Beim Strickmuster zählt die Neigung von Reihe zu Reihe. Kantenrundungen sind auf 35° begrenzt, damit diagonale Stränge darauf druckbar bleiben.
+- Webmuster gehen nur rundum auf, wenn die Strangzahl passt; die App rundet sie bei Bedarf auf (Leinwand gerade, Köper 2/2 Vielfaches von 4, Köper 2/1 Vielfaches von 3).
+- Strickmuster: Nachbarreihen müssen sich mindestens 0,3 mm überlappen. Korbstruktur: zwischen den Stäben höchstens 15 mm freie Brücke.
+- Sockel und Schirm sind getrennte Teile. Der Sockel wird kopfüber ausgegeben (Deckel auf dem Druckbett). Die Schirmlippe steckt mit 0,3 mm Spiel je Seite in der Nut.
+- Panel- und Puckmaße als Nennmaß eintragen; der Einlass ist genau um das Passungsspiel größer (Standard 0,2 mm, auch an den Ecken), der Diffusor hat exakt das Nennmaß. Dreht man die Unterkante, drehen Leuchtmittel, Einlass und Diffusor mit.
+- Diffusor in Weiß oder Natur (PLA/PETG), 0,6–1,2 mm Grundschicht, 100 % Füllung.
+- Das Lochmaß für die Fassung mit einem kleinen Probedruck prüfen; Fassungsringe unterscheiden sich je nach Hersteller.
 - Nur LED-Leuchtmittel verwenden. PLA wird ab etwa 55 °C weich.
