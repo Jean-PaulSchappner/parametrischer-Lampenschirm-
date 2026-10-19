@@ -15,7 +15,7 @@ Dieser Ordner enthält alles, was für die Veröffentlichung als parametrisches 
 3. Die Bilder aus `bilder/` hochladen, `02_woven_light_licht.png` oder `01_woven_light.png` als Titelbild. Sobald eine echte Lampe gedruckt ist, Fotos davon ergänzen: Renderings allein wirken weniger glaubwürdig.
 4. Titel, Kurzbeschreibung und Beschreibung aus dem Abschnitt unten übernehmen.
 5. Lizenz wählen (Vorschlag: CC BY-NC-SA 4.0 für Privatnutzung mit Namensnennung, oder CC BY 4.0, wenn auch kommerzielle Nutzung erlaubt sein soll).
-6. Die Geflecht-Variante ist nach Fotos eines anderen MakerWorld-Modells nachgebaut. Den ursprünglichen Designer in der Beschreibung als Inspiration nennen und prüfen, ob MakerWorld das Modell als Remix verknüpft haben möchte.
+6. Die Geflecht-Variante ist nach Fotos eines anderen MakerWorld-Modells nachgebaut (Dateien davon wurden nicht verwendet). Der Abschnitt „Inspiration“ unten nennt es bereits; dort den Namen des Designers eintragen (steht auf der Modellseite) und beim Hochladen die Remix-Verknüpfung zu diesem Modell setzen, falls MakerWorld sie anbietet.
 7. Veröffentlichen.
 
 Eigene Varianten: In der App (`index.html`) gestalten und mit „OpenSCAD für MakerWorld exportieren“ eine neue `.scad` erzeugen. Deren Voreinstellungen entsprechen dann genau dem Entwurf, auch mit einer aus einer STL gelernten Grundform.
@@ -63,6 +63,8 @@ Ein parametrischer Tischlampen-Schirm aus einzelnen Strängen, die sich beim Dru
 **Maße prüfen**
 Panel- und Puckmaße als Nennmaß eintragen, das Spiel (Standard 0,2 mm je Seite) kommt automatisch dazu. Das Lochmaß der Fassung am besten mit einem kleinen Probedruck prüfen.
 
+**Inspiration:** Die Geflecht-Variante ist nach Fotos des MakerWorld-Modells „Woven Light Mesh“ von [NAME DES DESIGNERS EINTRAGEN] nachgebaut (https://makerworld.com/de/makerlab/parametricModelMaker?designId=2860644). Geometrie und Code sind eigenständig neu erstellt; Dateien des Originals wurden nicht verwendet.
+
 Erstellt mit „Lampenschirm Studio“, einer Web-App mit 3D-Vorschau, Druckbarkeitsprüfung mit automatischer Korrektur und der Möglichkeit, Grundformen aus eigenen STL-Dateien zu lernen.
 
 ### Description (English)
@@ -73,6 +75,8 @@ A parametric table-lamp shade made of individual strands that fuse into a fine w
 - **Patterns:** crossed weave (plain or twill) with over/under offset, horizontal knit, basket weave with stakes and weavers, spirals or vertical ribs.
 - **Light:** separate base with cable slot, the shade plugs in with a lip; E27/E14/GU10 socket, round LED puck or rectangular LED panel (e.g. 120 × 160 mm) with adjustable clearance; flat or hood diffuser, sunk flush, density adjustable via a honeycomb structure.
 - **Printing:** choose the part with the "teil" setting (shade, base printed upside down, diffuser). No supports needed. 0.4 mm nozzle, 0.2 mm layers. Diffuser in white or natural at 100 % infill. Use LED bulbs only.
+
+**Inspiration:** The woven variant was recreated from photos of the MakerWorld model "Woven Light Mesh" by [DESIGNER NAME] (https://makerworld.com/de/makerlab/parametricModelMaker?designId=2860644). Geometry and code were written from scratch; no files of the original were used.
 
 ### Tags
 Lampenschirm, lampshade, parametric, OpenSCAD, woven, mesh, knit, basket, LED panel, E27, table lamp, Tischlampe, Geflecht

@@ -1,0 +1,3 @@
+# Portables OpenSCAD für die Tests (npm run openscad-holen)
+.openscad/
+node_modules/

@@ -2041,8 +2041,9 @@ function rebuild() {
   clearTimeout(timer);
   const heavy = current && current.stats.tris > 250000;
   if (heavy) busy.classList.add('show');
-  // Bei großen Modellen erst rechnen, wenn der Regler kurz stillsteht
-  timer = setTimeout(() => requestAnimationFrame(doRebuild), heavy ? 180 : 0);
+  // Bei großen Modellen erst rechnen, wenn der Regler kurz stillsteht. Ein Timer statt requestAnimationFrame,
+  // damit die Änderung auch in einem Hintergrund-Tab übernommen wird; 16 ms lassen die „Berechne …“-Anzeige zeichnen.
+  timer = setTimeout(doRebuild, heavy ? 180 : 16);
 }
 
 function setGeometry(mesh, data) {

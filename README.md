@@ -6,6 +6,16 @@ Web-App zum Gestalten parametrischer Lampenschirme für den 3D-Druck: Geflecht, 
 
 `index.html` im Browser öffnen (Chrome, Edge oder Firefox). Eine Internetverbindung ist nötig, weil Three.js und die Schriften per CDN geladen werden. Eine Installation ist nicht nötig.
 
+Wer lieber über `http://localhost` arbeitet (manche Browser-Erweiterungen erlauben keine `file://`-Seiten): `npm start` und dann http://localhost:8080 öffnen. Dafür reicht Node.js ab Version 18, weitere Pakete braucht es nicht.
+
+| Befehl | Zweck |
+|---|---|
+| `npm start` | Lokaler Webserver für die App (Port über `PORT` änderbar) |
+| `npm run pruefen` | Alle Prüfungen, mit OpenSCAD-Vergleich, wenn OpenSCAD gefunden wird |
+| `npm run openscad-holen` | Lädt OpenSCAD 2021.01 portabel nach `.openscad/` (Windows, von Git ausgeschlossen) |
+| `npm run scad-einbetten` | Übernimmt Änderungen an `makerworld/lampenschirm.scad` in die App |
+| `npm run makerworld-paket -- "Vorlagenname"` | Setzt die Voreinstellungen der SCAD-Datei auf eine Vorlage der App |
+
 ## Ordner
 
 | Pfad | Inhalt |
@@ -56,9 +66,11 @@ Veröffentlichen: siehe `makerworld/BESCHREIBUNG.md`. Wurde `makerworld/lampensc
 ## Prüfen
 
 ```
-node tests/pruefen.mjs
-OPENSCAD="C:/Pfad/zu/openscad.com" node tests/pruefen.mjs
+npm run openscad-holen   # einmalig, für den OpenSCAD-Vergleich
+npm run pruefen
 ```
+
+OpenSCAD wird in dieser Reihenfolge gesucht: Umgebungsvariable `OPENSCAD`, `.openscad/` im Projekt, Standardinstallation unter Windows/macOS, `openscad` im `PATH`. Ohne OpenSCAD laufen alle anderen Prüfungen trotzdem.
 
 Geprüft werden: alle Vorlagen ohne Warnung und mit geschlossenen Teilen; die Passung von Panel, Puck, Diffusor und Schirmlippe im Netz nachgemessen; alle automatischen Korrekturen; das Lernen aus STL (Genauigkeit gegen die bekannte Form); mit gesetztem `OPENSCAD` zusätzlich der Vergleich App ↔ OpenSCAD für zehn Teile.
 

@@ -112,8 +112,22 @@ for (const name of ['Käfig', 'Woven Light', 'Kissen-Stapel']) {
 ok(codes(buildLampshade({ ...DEFAULTS, grundform: 'stl-fehlt' })).includes('formFehlt'), 'Fehlende Form wird gemeldet');
 
 /* ---------- 5. OpenSCAD ---------- */
-const OS = process.env.OPENSCAD;
-console.log('\n5. OpenSCAD-Fassung' + (OS ? '' : ' (übersprungen, OPENSCAD nicht gesetzt)'));
+// OpenSCAD suchen: Umgebungsvariable, portable Version im Projekt (npm run openscad-holen), Standardinstallation, PATH
+function findOpenSCAD() {
+  const tryRun = exe => { try { execFileSync(exe, ['--version'], { stdio: 'pipe' }); return exe; } catch { return null; } };
+  const candidates = [
+    process.env.OPENSCAD,
+    join(new URL('.openscad/openscad-2021.01/', root).pathname.replace(/^\/([A-Za-z]:)/, '$1'), 'openscad.com'),
+    'C:/Program Files/OpenSCAD/openscad.com',
+    'C:/Program Files (x86)/OpenSCAD/openscad.com',
+    '/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD',
+    'openscad',
+  ].filter(Boolean);
+  for (const c of candidates) { const r = tryRun(c); if (r) return r; }
+  return null;
+}
+const OS = findOpenSCAD();
+console.log('\n5. OpenSCAD-Fassung' + (OS ? ` (${OS})` : ' (Vergleich übersprungen: OpenSCAD nicht gefunden, „npm run openscad-holen“ lädt es)'));
 const tplHtml = cut('<script type="text/plain" id="scad-vorlage">', '</script><!-- /scad-vorlage -->').replace('<script type="text/plain" id="scad-vorlage">\n', '');
 ok(tplHtml === scadFile, 'Eingebettete Vorlage in index.html entspricht makerworld/lampenschirm.scad');
 if (OS) {

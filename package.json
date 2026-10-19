@@ -1,0 +1,14 @@
+{
+  "name": "lampenschirm-studio",
+  "private": true,
+  "type": "module",
+  "description": "Parametrische Lampenschirme für den 3D-Druck: Web-App und OpenSCAD-Modell für MakerWorld",
+  "scripts": {
+    "start": "node werkzeuge/server.mjs",
+    "pruefen": "node tests/pruefen.mjs",
+    "openscad-holen": "node werkzeuge/openscad-holen.mjs",
+    "scad-einbetten": "node werkzeuge/scad-einbetten.mjs",
+    "makerworld-paket": "node werkzeuge/makerworld-paket.mjs"
+  },
+  "engines": { "node": ">=18" }
+}
