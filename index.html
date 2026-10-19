@@ -654,13 +654,17 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
    Parameter
    ===================================================================== */
 const SCHEMA = [
-  { group: 'Grundform (aus STL lernen)', custom: 'formen', items: [
+  { group: 'Lampentyp', open: true, items: [
+    { k: 'lampentyp', l: 'Lampentyp', type: 'select', def: 'schirm', opts: [
+      ['schirm', 'Lampenschirm (Tisch- und Pendelleuchte)'], ['wandspot', 'Wandspot (Wandhalter + Spotkopf)']] },
+  ]},
+  { group: 'Grundform (aus STL lernen)', typ: 'schirm', custom: 'formen', items: [
     { k: 'grundform', l: 'Grundform', type: 'select', def: 'param', opts: [['param', 'Parametrisch (Regler)']] },
     { k: 'formSkala', l: 'Größe der gelernten Form', min: 30, max: 300, step: 1, def: 100, u: '%' },
     { k: 'formMix', l: 'Mischung mit parametrischer Form', min: 0, max: 100, step: 1, def: 0, u: '%' },
     { k: 'formGlaettung', l: 'Glättung der gelernten Form', min: 0, max: 10, step: 1, def: 2, u: '' },
   ]},
-  { group: 'Form', open: true, items: [
+  { typ: 'schirm', group: 'Form', open: true, items: [
     { k: 'hoehe', l: 'Höhe', min: 60, max: 400, step: 1, def: 180, u: 'mm' },
     { k: 'radiusUnten', l: 'Radius unten', min: 20, max: 200, step: 1, def: 90, u: 'mm' },
     { k: 'radiusOben', l: 'Radius oben', min: 20, max: 200, step: 1, def: 60, u: 'mm' },
@@ -674,7 +678,7 @@ const SCHEMA = [
     { k: 'kanteUnten', l: 'Kante unten abrunden', min: 0, max: 30, step: 0.5, def: 0, u: 'mm' },
     { k: 'kanteOben', l: 'Kante oben abrunden', min: 0, max: 30, step: 0.5, def: 0, u: 'mm' },
   ]},
-  { group: 'Querschnitt & Verdrehung', open: true, items: [
+  { typ: 'schirm', group: 'Querschnitt & Verdrehung', open: true, items: [
     { k: 'querschnitt', l: 'Querschnitt', type: 'select', def: '0', opts: [
       ['0', 'Rund'], ['3', 'Dreieck (abgerundet)'], ['4', 'Viereck (abgerundet)'], ['5', 'Fünfeck (abgerundet)'],
       ['6', 'Sechseck (abgerundet)'], ['8', 'Achteck (abgerundet)']] },
@@ -689,7 +693,7 @@ const SCHEMA = [
     { k: 'verdrehMitte', l: 'Falte: Höhe', min: 0.1, max: 0.9, step: 0.01, def: 0.4, u: '' },
     { k: 'verdrehBreite', l: 'Falte: Breite', min: 0.05, max: 0.6, step: 0.01, def: 0.2, u: '' },
   ]},
-  { group: 'Geflecht', open: true, items: [
+  { typ: 'schirm', group: 'Geflecht', open: true, items: [
     { k: 'muster', l: 'Muster', type: 'select', def: 'geflecht', opts: [
       ['geflecht', 'Geflecht (gekreuzt)'], ['rechts', 'Spirale rechts'], ['links', 'Spirale links'], ['strick', 'Strickmuster (horizontale Reihen)'], ['korb', 'Korbstruktur (Stäbe + Flechtreihen)'],
       ['keine', 'Kein Geflecht']] },
@@ -716,13 +720,13 @@ const SCHEMA = [
     { k: 'wellenAmp', l: 'Wellen Ausschlag', min: 0, max: 20, step: 0.5, def: 0, u: '°' },
     { k: 'wellenFreq', l: 'Wellen Anzahl', min: 1, max: 16, step: 1, def: 4, u: '' },
   ]},
-  { group: 'Stabilität', items: [
+  { typ: 'schirm', group: 'Stabilität', items: [
     { k: 'rippen', l: 'Senkrechte Rippen', min: 0, max: 48, step: 1, def: 0, u: '' },
     { k: 'zwischenRinge', l: 'Zwischenringe', min: 0, max: 12, step: 1, def: 0, u: '' },
     { k: 'randHoehe', l: 'Randhöhe', min: 0, max: 20, step: 0.5, def: 5, u: 'mm' },
     { k: 'randDicke', l: 'Randstärke', min: 1, max: 10, step: 0.1, def: 2.8, u: 'mm' },
   ]},
-  { group: 'Leuchtmittel & Fassung', items: [
+  { typ: 'schirm', group: 'Leuchtmittel & Fassung', items: [
     { k: 'fassung', l: 'Halter für Leuchtmittel', type: 'check', def: true },
     { k: 'fassungPos', l: 'Position', type: 'select', def: 'oben', opts: [
       ['oben', 'Speichen oben im Schirm (Pendelleuchte)'], ['unten', 'Speichen unten im Schirm'],
@@ -757,7 +761,7 @@ const SCHEMA = [
     { k: 'speichenBreite', l: 'Speichenbreite', min: 2, max: 15, step: 0.5, def: 5, u: 'mm' },
     { k: 'speichenHoehe', l: 'Speichenhöhe', min: 1.5, max: 12, step: 0.5, def: 4, u: 'mm' },
   ]},
-  { group: 'Sockel', items: [
+  { typ: 'schirm', group: 'Sockel', items: [
     { k: 'sockel', l: 'Sockel unter dem Schirm', type: 'check', def: false },
     { k: 'sockelHoehe', l: 'Sockelhöhe', min: 20, max: 150, step: 1, def: 65, u: 'mm' },
     { k: 'sockelUeberstand', l: 'Überstand zum Schirm', min: 0, max: 20, step: 0.5, def: 3, u: 'mm' },
@@ -765,6 +769,53 @@ const SCHEMA = [
     { k: 'sockelDeck', l: 'Deckelstärke', min: 2.5, max: 6, step: 0.1, def: 3.2, u: 'mm' },
     { k: 'kabelD', l: 'Kabelschlitz', min: 0, max: 16, step: 0.5, def: 8, u: 'mm' },
     { k: 'lippe', l: 'Einstecktiefe der Schirmlippe', min: 1.6, max: 25, step: 0.5, def: 1.6, u: 'mm' },
+  ]},
+  { group: 'Wandspot: Spotkopf', typ: 'wandspot', open: true, items: [
+    { k: 'spotForm', l: 'Form des Spotkopfs', type: 'select', def: 'konisch', opts: [['zylinder', 'Zylindrisch'], ['konisch', 'Konisch (hinten schmaler)']] },
+    { k: 'spotD', l: 'Spotkopfdurchmesser (vorn)', min: 40, max: 200, step: 1, def: 90, u: 'mm' },
+    { k: 'spotTiefe', l: 'Spotkopftiefe', min: 30, max: 200, step: 1, def: 100, u: 'mm' },
+    { k: 'spotWand', l: 'Gehäusewandstärke', min: 0.8, max: 6, step: 0.1, def: 2, u: 'mm' },
+    { k: 'spotKegel', l: 'Konizität (Kegelwinkel)', min: 0, max: 30, step: 0.5, def: 8, u: '°' },
+    { k: 'spotOeffnung', l: 'Frontöffnung (Durchmesser)', min: 20, max: 200, step: 1, def: 74, u: 'mm' },
+    { k: 'spotFrontring', l: 'Frontring (Kragen vorn)', type: 'check', def: true },
+    { k: 'spotFrontringBreite', l: 'Frontring-Überstand', min: 1, max: 12, step: 0.5, def: 3, u: 'mm' },
+    { k: 'spotKopfDreh', l: 'Muster um die Kopfachse drehen', min: 0, max: 360, step: 1, def: 0, u: '°' },
+  ]},
+  { group: 'Wandspot: Korbstruktur', typ: 'wandspot', open: true, items: [
+    { k: 'spotKorb', l: 'Korbstruktur (offener Mantel aus Streben)', type: 'check', def: true },
+    { k: 'spotMuster', l: 'Strukturtyp', type: 'select', def: 'korb', opts: [
+      ['korb', 'Klassisches Korbgeflecht (Stäbe + Flechtreihen)'], ['diagonal', 'Diagonales Flechtmuster (1 über, 1 unter)'],
+      ['kreuz', 'Kreuzgeflecht (Köper, 2 über, 2 unter)'], ['gitter', 'Offenes Gitter (Rauten, zwei Lagen)'],
+      ['ringe', 'Senkrechte Streben mit umlaufenden Ringen']] },
+    { k: 'spotStreben', l: 'Anzahl der Streben (je Richtung)', min: 4, max: 120, step: 1, def: 28, u: '' },
+    { k: 'spotStrebeStaerke', l: 'Strebenstärke (radial)', min: 0.6, max: 5, step: 0.1, def: 1.8, u: 'mm' },
+    { k: 'spotStrebeBreite', l: 'Strebenbreite', min: 0.8, max: 8, step: 0.1, def: 2.4, u: 'mm' },
+    { k: 'spotMasche', l: 'Maschenabstand (Reihen)', min: 3, max: 30, step: 0.5, def: 8, u: 'mm' },
+    { k: 'spotFlechtwinkel', l: 'Flechtwinkel (gegen die Achse)', min: 15, max: 60, step: 1, def: 40, u: '°' },
+    { k: 'spotHub', l: 'Strukturintensität (Über/Unter-Hub)', min: 0, max: 3, step: 0.05, def: 0.8, u: 'mm' },
+    { k: 'spotKorbHoehe', l: 'Strukturhöhe', min: 10, max: 190, step: 1, def: 65, u: 'mm' },
+    { k: 'spotRand', l: 'Randringstärke (radial)', min: 1, max: 10, step: 0.1, def: 4, u: 'mm' },
+    { k: 'spotRandHoehe', l: 'Randringhöhe', min: 2, max: 20, step: 0.5, def: 6, u: 'mm' },
+  ]},
+  { group: 'Wandspot: Wandhalter', typ: 'wandspot', items: [
+    { k: 'spotWandabstand', l: 'Wandabstand (Platte bis Knick)', min: 5, max: 200, step: 1, def: 40, u: 'mm' },
+    { k: 'spotWinkel', l: 'Halterungswinkel (Neigung des Kopfes)', min: 0, max: 90, step: 1, def: 35, u: '°' },
+    { k: 'spotAusrichtung', l: 'Ausrichtung (0° unten, 90° rechts, 180° oben)', min: -180, max: 180, step: 1, def: 0, u: '°' },
+    { k: 'spotArmD', l: 'Armdurchmesser', min: 10, max: 30, step: 0.5, def: 16, u: 'mm' },
+    { k: 'spotKabelD', l: 'Kabelkanal (Durchmesser)', min: 2, max: 14, step: 0.5, def: 6, u: 'mm' },
+    { k: 'spotSpiel', l: 'Passungsspiel Zapfen/Buchse', min: 0, max: 1, step: 0.05, def: 0.2, u: 'mm' },
+    { k: 'spotPlatteForm', l: 'Montageplatte', type: 'select', def: 'rund', opts: [['rund', 'Rund'], ['eckig', 'Rechteckig (abgerundet)']] },
+    { k: 'spotPlatteB', l: 'Plattenbreite bzw. -durchmesser', min: 30, max: 200, step: 1, def: 90, u: 'mm' },
+    { k: 'spotPlatteH', l: 'Plattenhöhe', min: 20, max: 200, step: 1, def: 60, u: 'mm' },
+    { k: 'spotPlatteDicke', l: 'Plattenstärke', min: 3, max: 12, step: 0.5, def: 5, u: 'mm' },
+    { k: 'spotSchraubeD', l: 'Schraubenloch', min: 2.5, max: 8, step: 0.1, def: 4.5, u: 'mm' },
+    { k: 'spotSchraubeKopf', l: 'Senkkopf-Durchmesser', min: 4, max: 16, step: 0.5, def: 8.5, u: 'mm' },
+    { k: 'spotSchraubenAbstand', l: 'Lochabstand', min: 20, max: 190, step: 1, def: 60, u: 'mm' },
+  ]},
+  { group: 'Wandspot: Leuchtmittel & Druck', typ: 'wandspot', items: [
+    { k: 'spotLampeD', l: 'Leuchtmittel-Durchmesser (z. B. GU10 50 mm)', min: 15, max: 150, step: 0.5, def: 50, u: 'mm' },
+    { k: 'spotLampeL', l: 'Leuchtmittel-Länge samt Fassung', min: 10, max: 180, step: 0.5, def: 60, u: 'mm' },
+    { k: 'spotDuese', l: 'Düse bzw. kleinste Strichbreite des Verfahrens', min: 0.2, max: 1, step: 0.05, def: 0.4, u: 'mm' },
   ]},
   { group: 'Darstellung & Export', items: [
     { k: 'farbe', l: 'Farbe', type: 'color', def: '#e9dcc4' },
@@ -774,6 +825,8 @@ const SCHEMA = [
 ];
 const ITEMS = SCHEMA.flatMap(g => g.items);
 const DEFAULTS = Object.fromEntries(ITEMS.map(i => [i.k, i.def]));
+// Alle Werte, die die Geometrie des Wandspots bestimmen (Cache-Schlüssel)
+const SPOT_KEYS = [...SCHEMA.filter(g => g.typ === 'wandspot').flatMap(g => g.items.map(i => i.k)), 'aufloesung'];
 const LOCH = { e27: 42, e14: 29, gu10: 36 };
 
 // Nachbau der Mesh-Tischlampe (feines Geflecht, abgerundetes Viereck, verdreht, mit Sockel)
@@ -842,6 +895,21 @@ const KORB_PANEL = { ...WOVEN_PANEL_SOCKEL, ...SOCKEL_TEIL, muster: 'korb', korb
 const STRICK_PANEL = { ...WOVEN_PANEL_SOCKEL, ...SOCKEL_TEIL, muster: 'strick', maschen: 130, strickReihe: 2.6, strickHub: 0.7,
   strickTiefe: 0.75, strickHoehe: 2, strangTiefe: 1.2, sockelHoehe: 45, farbe: '#d9967a' };
 
+// Wandspots: Korbgeflecht als Start, dazu je Strukturtyp eine Vorlage und eine geschlossene Variante
+const SPOT = { lampentyp: 'wandspot', farbe: '#c9a06a' };
+const SPOT_PRESETS = {
+  'Wandspot · Korbgeflecht': { ...SPOT },
+  'Wandspot · Diagonal': { ...SPOT, spotMuster: 'diagonal', spotForm: 'zylinder', spotD: 80, spotTiefe: 90, spotOeffnung: 66,
+    spotStreben: 18, spotFlechtwinkel: 38, spotHub: 0.5, spotStrebeStaerke: 1.8, spotKorbHoehe: 56, farbe: '#e9dcc4' },
+  'Wandspot · Kreuzgeflecht': { ...SPOT, spotMuster: 'kreuz', spotStreben: 20, spotFlechtwinkel: 35, spotHub: 0.5,
+    spotStrebeStaerke: 1.8, spotStrebeBreite: 2.2, spotWinkel: 45, farbe: '#d9967a' },
+  'Wandspot · Gitter': { ...SPOT, spotMuster: 'gitter', spotKegel: 12, spotD: 100, spotOeffnung: 84, spotStreben: 16,
+    spotFlechtwinkel: 42, spotStrebeStaerke: 2, spotStrebeBreite: 2, spotWandabstand: 50, farbe: '#eee4da' },
+  'Wandspot · Stäbe + Ringe': { ...SPOT, spotMuster: 'ringe', spotForm: 'zylinder', spotStreben: 30, spotMasche: 10,
+    spotStrebeBreite: 2.2, spotPlatteForm: 'eckig', spotPlatteB: 100, spotPlatteH: 60, spotSchraubenAbstand: 70, farbe: '#e0863a' },
+  'Wandspot · geschlossen': { ...SPOT, spotKorb: false, spotForm: 'zylinder', spotD: 70, spotTiefe: 80, spotOeffnung: 60, spotWinkel: 25, farbe: '#eee4da' },
+};
+
 const PRESETS = {
   'Woven Light': WOVEN_LIGHT,
   'Woven Light · Panel 120×160': WOVEN_PANEL,
@@ -870,6 +938,7 @@ const PRESETS = {
     radiusUnten: 75, radiusOben: 75, bauch: 35, hoehe: 200 },
   'Kugel': { hoehe: 210, radiusUnten: 40, radiusOben: 40, bauch: 65, bauchPos: 0.5, straenge: 18, drehung: 0.25,
     webTiefe: 0.5, fassungTyp: 'e14', lochD: 29 },
+  ...SPOT_PRESETS,
 };
 
 let P = { ...DEFAULTS };
@@ -1319,6 +1388,7 @@ function measureOverhang(p, count = 128, segs = 480) {
 const WEBART = { leinwand: [1, -1], koeper22: [1, 1, -1, -1], koeper21: [1, 1, -1] };
 
 function buildLampshade(p) {
+  if (p.lampentyp === 'wandspot') return buildWandspot(p);
   const mb = new MeshBuilder();
   const surf = makeSurface(p);
   const { H, R, S, normal, hNormal } = surf;
@@ -1822,6 +1892,527 @@ function rrectRadius(a, hx, hy, rr) {
 }
 
 /* =====================================================================
+   Wandspot
+   Zwei Druckteile, beide als Netz ohne Boolesche Vereinigung:
+   - Wandhalter: Platte mit gesenkten Schraubenlöchern und Kabelloch, hohler Arm (Kabelkanal) mit Knick,
+     am Ende ein Zapfen. Platte und Arm sind ein einziger geschlossener Körper mit gemeinsamen Kanten.
+   - Spotkopf: Rotationskörper (zylindrisch oder konisch) mit Rückwand, Buchse für den Zapfen, Frontöffnung
+     und wahlweise Frontring. Mit Korbstruktur besteht der Mantel aus einem Topf hinten, einem Randring vorn
+     und dazwischen Streben mit Rechteckquerschnitt, die abwechselnd über und unter einander laufen.
+     Jede Strebe ist ein geschlossener Körper; sie stecken in den Ringen und durchdringen sich an den Kreuzungen
+     mit Überdeckung, der Slicer vereint sie beim Slicen (wie die Stränge des Lampenschirms).
+   Koordinaten: Wandhalter mit der Wandseite der Platte auf z = 0, z zeigt von der Wand weg. Der Spotkopf liegt
+   in Druckrichtung (Rückwand auf z = 0, Achse +z); spot.matrix setzt ihn auf den Zapfen.
+   ===================================================================== */
+const SPOT_ZAPFEN = 12;                                              // Zapfenlänge = Tiefe der Buchse im Kopf, mm
+const SPOT_RASTER = { korb: 2, diagonal: 1, kreuz: 2, gitter: 1, ringe: 1 };   // Strebenzahl muss ein Vielfaches sein
+const SPOT_MIN_N = { korb: 6, diagonal: 4, kreuz: 6, gitter: 4, ringe: 4 };
+const SPOT_WEBE = { diagonal: [1, -1], kreuz: [1, 1, -1, -1] };     // über/unter je Kreuzung
+const SPOT_BRUECKE = 15;                                             // längste freie Brücke beim Druck, mm
+const de = (v, d = 1) => v.toFixed(d).replace('.', ',');
+const rotZ = (v, b) => [v[0] * Math.cos(b) - v[1] * Math.sin(b), v[0] * Math.sin(b) + v[1] * Math.cos(b), v[2]];
+
+// Alle abgeleiteten Maße mit Grenzen. Werte, die geklemmt werden müssen, damit die Geometrie gültig bleibt,
+// stehen als „…Want“ daneben; daraus entstehen Warnungen mit Korrektur.
+function spotGeom(p) {
+  const rad = Math.PI / 180, L = p.spotTiefe, Rf = p.spotD / 2, wall = p.spotWand;
+  const minWall = 2 * p.spotDuese, minStrut = 2.5 * p.spotDuese;
+  // Arm mit Kabelkanal, Zapfen mit Schulter, Buchse im Kopf
+  const ra = p.spotArmD / 2, shoulder = Math.min(3, Math.max(1.2, ra * 0.25)), rp = ra - shoulder;
+  const rkWant = p.spotKabelD / 2, rk = Math.min(rkWant, rp - 0.8);
+  const rh = rp + p.spotSpiel, backT = Math.max(wall, 1.6), bossH = Math.max(0, SPOT_ZAPFEN - backT), rbo = rh + Math.max(wall, 1.6);
+  const korb = !!p.spotKorb, muster = p.spotMuster;
+  const rimT = Math.max(p.spotRand, wall);
+  const tBack = korb ? rimT / 2 : wall / 2;
+  // Konus: hinten kleiner, aber mindestens so groß, dass Buchse und Rückwand Platz haben
+  const cone = p.spotForm === 'konisch' ? p.spotKegel * rad : 0;
+  const RbWant = Rf - L * Math.tan(cone), RbMin = rbo + 0.8 + tBack + wall / 2;
+  const Rb = Math.max(RbWant, RbMin);
+  const slope = (Rf - Rb) / L;
+  const rm = z => Rb - wall / 2 + slope * z;                         // Mittelfläche der Wand
+  // Front: Lippe (Frontöffnung kleiner als innen) und Frontring, beide mit 45°-Fase nach unten (stützenfrei)
+  const tFront = korb ? rimT / 2 : wall / 2, rInL = rm(L) - tFront, lipT = Math.max(wall, 1.2);
+  const lipMaxW = Math.max(0, 0.45 * L * (1 + slope) - lipT);
+  const rOpenWant = Math.min(p.spotOeffnung / 2, rInL);
+  let rOpen = Math.max(rOpenWant, rInL - lipMaxW);
+  const lip = rInL - rOpen > 0.3;
+  if (!lip) rOpen = rInL;
+  const lipW = rInL - rOpen, lipDepth = lip ? (lipW + lipT) / (1 + slope) : 0;
+  const fr = !!p.spotFrontring, ft = Math.max(wall, 1.2);
+  const fbMax = Math.max(0.5, 0.4 * L * (1 - slope) - ft), fb = Math.min(p.spotFrontringBreite, fbMax);
+  const flangeDepth = fr ? (fb + ft) / (1 - slope) : 0;
+  // Zonen: Topf [0, z0], Korb [z0, z1], Randring [z1, L]
+  const frontH = Math.max(p.spotRandHoehe, lipDepth + 0.8, flangeDepth + 0.8);
+  const hbMin = Math.max(p.spotRandHoehe, backT + 1.5);
+  const HsMax = L - frontH - hbMin;
+  const struct = korb && HsMax >= 4;
+  const Hs = struct ? Math.min(p.spotKorbHoehe, HsMax) : 0;
+  const z1 = L - frontH, z0 = z1 - Hs;
+  // Streben
+  const raster = SPOT_RASTER[muster] || 1;
+  const n = Math.max(SPOT_MIN_N[muster] || 4, Math.round(p.spotStreben / raster) * raster);
+  const ts = p.spotStrebeStaerke, w = p.spotStrebeBreite;
+  const woven = muster === 'korb' || muster === 'diagonal' || muster === 'kreuz';
+  const diag = muster === 'diagonal' || muster === 'kreuz' || muster === 'gitter';
+  const A = woven ? p.spotHub : 0, layer = woven ? 0 : ts / 4, maxOff = woven ? A : layer;
+  const needRim = 2 * (maxOff + ts / 2) + 0.4;
+  // Überdeckung an den Kreuzungen (radial): Korb Stab mittig, Reihe ±A; diagonal ±A gegeneinander; sonst zwei Lagen
+  const contact = muster === 'korb' ? ts - A : woven ? ts - 2 * A : ts / 2;
+  const rows = struct && !diag ? Math.max(1, Math.round(Hs / p.spotMasche)) : 0;
+  const dz = rows ? Hs / rows : 0;
+  const theta = p.spotFlechtwinkel * rad, rMean = rm((z0 + z1) / 2);
+  const tau = struct && diag ? Hs * Math.tan(theta) / (2 * Math.PI * rMean) : 0;   // Umdrehungen über die Korbhöhe
+  const rmMax = Math.max(rm(z0), rm(z1)), rmMin = Math.min(rm(z0), rm(z1));
+  const bridge = !struct ? 0 : diag ? 2 * Math.PI * rmMax / (2 * n) - w / Math.cos(theta) : 2 * Math.PI * rmMax / n - w;
+  const cell = !struct ? 0 : diag ? 2 * Math.PI * rmMin / n * Math.cos(theta) - w : Math.min(dz - w, 2 * Math.PI * rmMin / n - w);
+  const embed = Math.max(0.5, Math.min(2, p.spotRandHoehe / 2, (z0 - backT) / 2, frontH / 2));
+  // Wandhalter
+  const T = p.spotPlatteDicke, rs = p.spotSchraubeD / 2, rkopf = Math.max(p.spotSchraubeKopf / 2, rs);
+  const csWant = rkopf - rs, cs = Math.max(0, Math.min(csWant, T - 1));
+  const round = p.spotPlatteForm === 'rund', edge = 2;
+  const hxWant = p.spotPlatteB / 2, hyWant = round ? hxWant : p.spotPlatteH / 2;
+  const aMin = 2 * (ra + rkopf + 1.5);
+  const hx = Math.max(hxWant, aMin / 2 + rkopf + edge), hy = round ? hx : Math.max(hyWant, rkopf + edge, ra + edge);
+  const aMax = 2 * (hx - rkopf - edge), a = Math.min(aMax, Math.max(aMin, p.spotSchraubenAbstand));
+  const alpha = p.spotWinkel * rad, beta = p.spotAusrichtung * rad;
+  const Rbend = 1.5 * ra, Lend = Math.max(2, ra * 0.3), zBend = T + p.spotWandabstand;
+  const sa = Math.sin(alpha), ca = Math.cos(alpha);
+  const arcEnd = [0, -Rbend * (1 - ca), zBend + Rbend * sa], tA = [0, -sa, ca];
+  const O = [0, arcEnd[1] + Lend * tA[1], arcEnd[2] + Lend * tA[2]];   // Schulter = Mitte der Kopf-Rückwand
+  return { L, Rf, Rb, RbWant, wall, slope, coneDeg: Math.atan(slope) / rad, rm, minWall, minStrut,
+    ra, rp, rk, rkWant, rh, backT, bossH, rbo, korb, struct, muster, rimT, tBack, tFront, rOpen, rOpenWant, lip, lipW, lipT, lipDepth,
+    fr, fb, ft, flangeDepth, frontH, Hs, HsMax, z0, z1, n, ts, w, woven, diag, A, layer, maxOff, needRim, contact,
+    rows, dz, theta, tau, bridge, cell, embed, rmMax, rmMin,
+    T, rs, rkopf, cs, csWant, round, hx, hy, hxWant, hyWant, a, alpha, beta, Rbend, Lend, zBend, arcEnd, tA, O };
+}
+
+// Profil des Kopfes in (r, z), gegen den Uhrzeigersinn (Inneres links), r > 0 überall (Kabelloch in der Mitte)
+function spotProfiles(g) {
+  const { L, rm } = g;
+  const front = t => {
+    const rO = z => rm(z) + t, rI = z => rm(z) - t, out = [];
+    if (g.fr) { const zg = L - g.flangeDepth; out.push([rO(zg), zg], [rO(L) + g.fb, L - g.ft], [rO(L) + g.fb, L]); }
+    else out.push([rO(L), L]);
+    if (g.lip) { const zc = L - g.lipDepth; out.push([g.rOpen, L], [g.rOpen, L - g.lipT], [rI(zc), zc]); }
+    else out.push([rI(L), L]);
+    return out;
+  };
+  const back = t => {
+    const rI = z => rm(z) - t;
+    return [[rI(g.backT), g.backT], ...(g.bossH > 0 ? [[g.rbo, g.backT], [g.rbo, g.backT + g.bossH], [g.rh, g.backT + g.bossH]] : [[g.rh, g.backT]])];
+  };
+  const clean = pts => pts.filter((q, i) => { const r = pts[(i + 1) % pts.length]; return Math.hypot(q[0] - r[0], q[1] - r[1]) > 1e-6; });
+  if (!g.struct) {
+    const t = g.wall / 2;
+    return [clean([[g.rh, 0], [rm(0) + t, 0], ...front(t), ...back(t)])];
+  }
+  const t = g.rimT / 2;
+  const cup = [[g.rh, 0], [rm(0) + t, 0], [rm(g.z0) + t, g.z0], [rm(g.z0) - t, g.z0], ...back(t)];
+  const ring = [[rm(g.z1) - t, g.z1], [rm(g.z1) + t, g.z1], ...front(t)];
+  return [clean(cup), clean(ring)];
+}
+
+// Ringe (gleiche Punktzahl) zu Bändern verbinden. Ringe gegen den Uhrzeigersinn um die Laufrichtung;
+// inward = Flächen zeigen zur Achse (Bohrungen, Löcher).
+function addBands(mb, rings, inward) {
+  const M = rings[0].length, base = mb.vcount;
+  for (const R of rings) for (const q of R) mb.v(q[0], q[1], q[2]);
+  for (let i = 0; i + 1 < rings.length; i++) for (let k = 0; k < M; k++) {
+    const k1 = (k + 1) % M, a = base + i * M + k, b = base + i * M + k1, c = base + (i + 1) * M + k1, d = base + (i + 1) * M + k;
+    if (inward) mb.idx.push(a, c, b, a, d, c); else mb.idx.push(a, b, c, a, c, d);
+  }
+}
+
+// Rotationskörper aus einem geschlossenen Profil; je Profilkante ein eigenes Band (harte Kanten an den Ecken)
+function addRevolve(mb, prof, M) {
+  const cs = [], sn = [];
+  for (let k = 0; k < M; k++) { cs.push(Math.cos(2 * Math.PI * k / M)); sn.push(Math.sin(2 * Math.PI * k / M)); }
+  for (let i = 0; i < prof.length; i++) {
+    const [r0, z0] = prof[i], [r1, z1] = prof[(i + 1) % prof.length];
+    // Profil gegen den Uhrzeigersinn: Band vom Start- zum Endpunkt der Kante zeigt nach außen
+    addBands(mb, [cs.map((c, k) => [r0 * c, r0 * sn[k], z0]), cs.map((c, k) => [r1 * c, r1 * sn[k], z1])], false);
+  }
+}
+
+// Rahmen für geschlossene Pfade (wie frames(), aber umlaufend)
+function closedFrames(pts, nrm) {
+  const n = pts.length, N = [], B = [];
+  for (let i = 0; i < n; i++) {
+    const t = norm(sub(pts[(i + 1) % n], pts[(i - 1 + n) % n])), s = nrm[i], d = dot(s, t);
+    const nn = norm([s[0] - t[0] * d, s[1] - t[1] * d, s[2] - t[2] * d]);
+    N.push(nn); B.push(cross(t, nn));
+  }
+  return { N, B };
+}
+
+// Dreieckszerlegung eines Umrisses (gegen den Uhrzeigersinn) mit Löchern (im Uhrzeigersinn).
+// Löcher werden per Brücke an den Umriss angeschlossen (nach Eberly), danach werden Ohren abgeschnitten.
+// Ergebnis: Indexdreiecke in [Umriss, Loch 1, Loch 2, …], gegen den Uhrzeigersinn. Prüft die Flächensumme.
+function triangulate(outer, holes = []) {
+  const P = [...outer, ...holes.flat()];
+  const cr = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  const inTri = (q, a, b, c) => cr(a, b, q) >= -1e-10 && cr(b, c, q) >= -1e-10 && cr(c, a, q) >= -1e-10;
+  const polyArea = loop => loop.reduce((s, q, i) => { const r = loop[(i + 1) % loop.length]; return s + q[0] * r[1] - r[0] * q[1]; }, 0) / 2;
+  let ring = outer.map((_, i) => i), off = outer.length;
+  const hs = holes.map(h => { const r = h.map((_, i) => off + i); off += h.length; return r; });
+  const maxX = r => Math.max(...r.map(i => P[i][0]));
+  hs.sort((x, y) => maxX(y) - maxX(x));
+  for (const h of hs) {
+    let m = 0;
+    for (let k = 1; k < h.length; k++) if (P[h[k]][0] > P[h[m]][0]) m = k;
+    const M = P[h[m]];
+    let best = Infinity, hit = -1;
+    for (let k = 0; k < ring.length; k++) {
+      const A = P[ring[k]], B = P[ring[(k + 1) % ring.length]];
+      if ((A[1] > M[1]) === (B[1] > M[1])) continue;
+      const x = A[0] + (M[1] - A[1]) * (B[0] - A[0]) / (B[1] - A[1]);
+      if (x >= M[0] && x - M[0] < best) { best = x - M[0]; hit = k; }
+    }
+    if (hit < 0) throw new Error('Loch liegt nicht im Umriss');
+    const I = [M[0] + best, M[1]], kB = (hit + 1) % ring.length;
+    let pk = P[ring[hit]][0] > P[ring[kB]][0] ? hit : kB;
+    const Pp = P[ring[pk]];
+    let bestAng = Infinity;
+    for (let k = 0; k < ring.length; k++) {
+      const Q = P[ring[k]];
+      if (ring[k] === ring[pk] || Q[0] < M[0] || !(inTri(Q, M, I, Pp) || inTri(Q, M, Pp, I))) continue;
+      const ang = Math.abs(Math.atan2(Q[1] - M[1], Q[0] - M[0]));
+      if (ang < bestAng) { bestAng = ang; pk = k; }
+    }
+    ring = [...ring.slice(0, pk + 1), ...h.slice(m), ...h.slice(0, m + 1), ring[pk], ...ring.slice(pk + 1)];
+  }
+  const V = ring.slice(), tris = [];
+  let start = 0;
+  while (V.length > 3) {
+    const n = V.length;
+    let cut = -1;
+    for (let s = 0; s < n && cut < 0; s++) {
+      const k = (start + s) % n, ia = V[(k - 1 + n) % n], ib = V[k], ic = V[(k + 1) % n];
+      const A = P[ia], B = P[ib], C = P[ic];
+      if (cr(A, B, C) <= 1e-10) continue;
+      let ok = true;
+      for (const q of V) if (q !== ia && q !== ib && q !== ic && inTri(P[q], A, B, C)) { ok = false; break; }
+      if (ok) cut = k;
+    }
+    if (cut < 0) throw new Error('Dreieckszerlegung fehlgeschlagen');
+    tris.push([V[(cut - 1 + n) % n], V[cut], V[(cut + 1) % n]]);
+    V.splice(cut, 1);
+    start = cut % V.length;
+  }
+  tris.push(V.slice());
+  const want = polyArea(outer) + holes.reduce((s, h) => s + polyArea(h), 0);
+  const got = tris.reduce((s, [a, b, c]) => s + cr(P[a], P[b], P[c]) / 2, 0);
+  if (Math.abs(got - want) > 1e-6 * Math.max(1, Math.abs(want)) || tris.some(([a, b, c]) => cr(P[a], P[b], P[c]) <= 0))
+    throw new Error('Dreieckszerlegung ungültig');
+  return tris;
+}
+
+// Netzprüfung wie bei einer STL: gleiche Koordinaten = gleicher Punkt. Zählt offene und mehrfach benutzte Kanten,
+// entartete Dreiecke, Körper (zusammenhängende Schalen) und falsch orientierte Körper. Mit overlap = true wird
+// zusätzlich geprüft, ob sich die Körper gegenseitig durchdringen und damit beim Slicen zu einem Teil verschmelzen
+// (eine Kante des einen schneidet ein Dreieck des anderen, oder ein Punkt liegt im anderen).
+function meshReport(pos, idx, overlap = true) {
+  const nv = pos.length / 3, nt = idx.length / 3, keys = new Map(), vid = new Int32Array(nv), V = [];
+  for (let i = 0; i < nv; i++) {
+    const k = Math.round(pos[3 * i] * 1e4) + ',' + Math.round(pos[3 * i + 1] * 1e4) + ',' + Math.round(pos[3 * i + 2] * 1e4);
+    let id = keys.get(k);
+    if (id === undefined) { id = V.length / 3; keys.set(k, id); V.push(pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]); }
+    vid[i] = id;
+  }
+  const n = V.length / 3, P = i => [V[3 * i], V[3 * i + 1], V[3 * i + 2]];
+  const T = new Int32Array(nt * 3);
+  for (let i = 0; i < nt * 3; i++) T[i] = vid[idx[i]];
+  const edges = new Map(), parent = new Int32Array(n).map((_, i) => i);
+  const find = x => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+  let degenerate = 0;
+  for (let t = 0; t < nt; t++) {
+    const a = T[3 * t], b = T[3 * t + 1], c = T[3 * t + 2];
+    if (a === b || b === c || c === a || len(cross(sub(P(b), P(a)), sub(P(c), P(a)))) < 2e-9) degenerate++;
+    for (const [u, v] of [[a, b], [b, c], [c, a]]) { const k = u * n + v; edges.set(k, (edges.get(k) || 0) + 1); }
+    parent[find(a)] = find(b); parent[find(b)] = find(c);
+  }
+  let openEdges = 0, nonManifold = 0;
+  for (const [k, c] of edges) { if (c > 1) nonManifold++; const u = Math.floor(k / n), v = k - u * n; if (!edges.has(v * n + u)) openEdges++; }
+  // Körper
+  const shellOf = new Map(), shells = [];
+  for (let t = 0; t < nt; t++) {
+    const r = find(T[3 * t]);
+    let s = shellOf.get(r);
+    if (!s) { s = { tris: [], vol: 0, min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] }; shellOf.set(r, s); shells.push(s); }
+    s.tris.push(t);
+    const A = P(T[3 * t]), B = P(T[3 * t + 1]), C = P(T[3 * t + 2]);
+    s.vol += dot(A, cross(B, C)) / 6;
+    for (const q of [A, B, C]) for (let d = 0; d < 3; d++) { s.min[d] = Math.min(s.min[d], q[d]); s.max[d] = Math.max(s.max[d], q[d]); }
+  }
+  const inverted = shells.filter(s => !(s.vol > 0)).length;
+  const min = [0, 1, 2].map(d => Math.min(...shells.map(s => s.min[d]))), max = [0, 1, 2].map(d => Math.max(...shells.map(s => s.max[d])));
+  let parts = shells.length;
+  if (overlap && shells.length > 1) {
+    const sp = shells.map((_, i) => i), sfind = x => { while (sp[x] !== x) { sp[x] = sp[sp[x]]; x = sp[x]; } return x; };
+    const boxHit = (a0, a1, b0, b1) => a0[0] <= b1[0] && b0[0] <= a1[0] && a0[1] <= b1[1] && b0[1] <= a1[1] && a0[2] <= b1[2] && b0[2] <= a1[2];
+    const triBox = t => { const A = P(T[3 * t]), B = P(T[3 * t + 1]), C = P(T[3 * t + 2]);
+      return [[0, 1, 2].map(d => Math.min(A[d], B[d], C[d])), [0, 1, 2].map(d => Math.max(A[d], B[d], C[d]))]; };
+    // Strecke p–q schneidet Dreieck echt im Inneren (Möller–Trumbore)
+    const segTri = (p, q, t) => {
+      const A = P(T[3 * t]), e1 = sub(P(T[3 * t + 1]), A), e2 = sub(P(T[3 * t + 2]), A), dir = sub(q, p), h = cross(dir, e2), det = dot(e1, h);
+      if (Math.abs(det) < 1e-12) return false;
+      const f = 1 / det, s = sub(p, A), u = f * dot(s, h);
+      if (u <= 1e-9 || u >= 1 - 1e-9) return false;
+      const qq = cross(s, e1), v = f * dot(dir, qq);
+      if (v <= 1e-9 || u + v >= 1 - 1e-9) return false;
+      const tt = f * dot(e2, qq);
+      return tt > 1e-9 && tt < 1 - 1e-9;
+    };
+    const pierce = (X, Y) => {
+      const b0 = [0, 1, 2].map(d => Math.max(X.min[d], Y.min[d]) - 1e-6), b1 = [0, 1, 2].map(d => Math.min(X.max[d], Y.max[d]) + 1e-6);
+      const ys = Y.tris.map(t => [t, triBox(t)]).filter(([, bx]) => boxHit(bx[0], bx[1], b0, b1));
+      if (!ys.length) return false;
+      for (const t of X.tris) for (let e = 0; e < 3; e++) {
+        const p = P(T[3 * t + e]), q = P(T[3 * t + (e + 1) % 3]);
+        const e0 = [0, 1, 2].map(d => Math.min(p[d], q[d])), e1 = [0, 1, 2].map(d => Math.max(p[d], q[d]));
+        if (!boxHit(e0, e1, b0, b1)) continue;
+        for (const [y, bx] of ys) if (boxHit(e0, e1, bx[0], bx[1]) && segTri(p, q, y)) return true;
+      }
+      return false;
+    };
+    const insideOf = (X, Y) => {
+      const p = P(T[3 * X.tris[0]]);
+      if (!boxHit(p, p, Y.min, Y.max)) return false;
+      const q = [Y.max[0] + 1, p[1] + 1.3e-3 * (Y.max[0] + 1 - p[0]), p[2] + 0.7e-3 * (Y.max[0] + 1 - p[0])];
+      let c = 0;
+      for (const t of Y.tris) if (segTri(p, q, t)) c++;
+      return c % 2 === 1;
+    };
+    for (let i = 0; i < shells.length; i++) for (let j = i + 1; j < shells.length; j++) {
+      if (sfind(i) === sfind(j) || !boxHit(shells[i].min, shells[i].max, shells[j].min, shells[j].max)) continue;
+      const X = shells[i], Y = shells[j];
+      if (pierce(X, Y) || pierce(Y, X) || insideOf(X, Y) || insideOf(Y, X)) { sp[sfind(i)] = sfind(j); parts--; }
+    }
+  }
+  return { tris: nt, verts: n, shells: shells.length, openEdges, nonManifold, degenerate, inverted, parts,
+    connected: parts === 1, closed: openEdges === 0 && nonManifold === 0, min, max,
+    size: [max[0] - min[0], max[1] - min[1], max[2] - min[2]], volume: shells.reduce((s, x) => s + x.vol, 0) };
+}
+
+// Ergebnis-Cache: der Schlüssel enthält jeden Wert, der die Geometrie des Wandspots beeinflusst
+const SPOT_CACHE = new Map();
+function buildWandspot(p) {
+  const key = JSON.stringify(SPOT_KEYS.map(k => p[k]));
+  let r = SPOT_CACHE.get(key);
+  if (!r) {
+    r = buildWandspotRaw(p);
+    SPOT_CACHE.set(key, r);
+    if (SPOT_CACHE.size > 16) SPOT_CACHE.delete(SPOT_CACHE.keys().next().value);
+  }
+  return r;
+}
+
+function buildWandspotRaw(p) {
+  const g = spotGeom(p), warnings = [];
+  const M = Math.max(48, Math.min(400, Math.round(p.aufloesung)));
+  /* ---------- Spotkopf ---------- */
+  const head = new MeshBuilder();
+  for (const prof of spotProfiles(g)) addRevolve(head, prof, M);
+  let maxOver = g.coneDeg;
+  if (g.fr || g.lip) maxOver = Math.max(maxOver, 45);   // Fasen unter Frontring und Lippe
+  const weave = [];
+  let strutCount = 0;
+  if (g.struct) {
+    const { rm, n, ts, w, A, z0, z1, Hs, embed } = g, rot = p.spotKopfDreh * Math.PI / 180;
+    const l = Math.hypot(1, g.slope), nc = 1 / l, nz = -g.slope / l;
+    const SP = (phi, z, off) => { const r = rm(z), c = Math.cos(phi), s = Math.sin(phi);
+      return [[r * c + nc * c * off, r * s + nc * s * off, z + nz * off], [nc * c, nc * s, nz]]; };
+    const za = z0 - embed, zb = z1 + embed;
+    const ringRow = (z, offAt, segs) => {
+      const pts = [], nrm = [];
+      for (let i = 0; i < segs; i++) { const s = i / segs, [c, nn] = SP(rot + 2 * Math.PI * s, z, offAt(s)); pts.push(c); nrm.push(nn); }
+      const { N, B } = closedFrames(pts, nrm);
+      head.addTube(pts, N, B, w, ts, true); strutCount++;
+    };
+    if (!g.diag) {
+      // Senkrechte Stäbe: im Korbgeflecht mittig, bei Stäben + Ringen innen (zweite Lage außen)
+      const so = g.muster === 'ringe' ? -g.layer : 0;
+      for (let j = 0; j < n; j++) {
+        const phi = rot + 2 * Math.PI * (j + 0.5) / n, a0 = SP(phi, za, so), a1 = SP(phi, zb, so);
+        const { N, B } = frames([a0[0], a1[0]], [a0[1], a1[1]]);
+        head.addTube([a0[0], a1[0]], N, B, w, ts, false); strutCount++;
+      }
+      for (let k = 0; k < g.rows; k++) {
+        const z = z0 + (k + 0.5) * g.dz;
+        if (g.muster === 'korb') {
+          // Flechtreihe: an Stab j genau ±A (abwechselnd vor und hinter den Stäben), Nachbarreihe gegenläufig
+          const sg = k % 2 ? -1 : 1;
+          ringRow(z, s => sg * A * Math.sin(Math.PI * n * s), n * 12);
+          for (let j = 0; j < n; j++) weave.push([sg * A * Math.sin(Math.PI * (j + 0.5)), 0, k, j]);
+        } else ringRow(z, () => g.layer, n * 8);
+      }
+    } else {
+      // Schräge Stränge in beiden Richtungen. q zählt die Kreuzungen entlang des Strangs (ganzzahlig = Kreuzung).
+      // Strang i (+) kreuzt bei q den Strang j = i + q (−); Zustand pat[(i + j) mod Periode], der Gegenstrang hat
+      // genau das Gegenteil, so liegt an jeder Kreuzung einer über und einer unter.
+      const pat = SPOT_WEBE[g.muster], per = pat ? pat.length : 1, md = x => ((x % per) + per) % per;
+      const nCross = 2 * n * g.tau, za_ = (za - z0) / Hs, zb_ = (zb - z0) / Hs;
+      let m = 8;
+      if (nCross * (zb_ - za_) * m < 24) m = Math.ceil(24 / (nCross * (zb_ - za_)));
+      const dZ = 1 / (nCross * m), k0 = Math.floor(za_ / dZ), k1 = Math.ceil(zb_ / dZ);
+      const state = (f, i, q) => f > 0 ? pat[md(2 * i + q)] : -pat[md(2 * i - q)];
+      const offAt = (f, i, q) => {
+        if (!pat) return f * g.layer;
+        const q0 = Math.floor(q + 1e-9), fr = q - q0, v0 = state(f, i, q0), v1 = state(f, i, q0 + 1);
+        return A * (v0 + (v1 - v0) * (1 - Math.cos(Math.PI * fr)) / 2);
+      };
+      for (const f of [1, -1]) for (let i = 0; i < n; i++) {
+        const pts = [], nrm = [];
+        let prev = null;
+        for (let k = k0; k <= k1; k++) {
+          const zeta = k * dZ, z = z0 + zeta * Hs, q = k / m, phi = rot + 2 * Math.PI * (i / n + f * g.tau * zeta);
+          const [c, nn] = SP(phi, z, offAt(f, i, q)), c0 = SP(phi, z, 0)[0];
+          if (prev) { const d = sub(c0, prev); maxOver = Math.max(maxOver, Math.acos(Math.min(1, Math.abs(d[2]) / (len(d) || 1))) * 180 / Math.PI); }
+          prev = c0; pts.push(c); nrm.push(nn);
+          if (pat && f > 0 && k % m === 0 && zeta >= 0 && zeta <= 1) {
+            const j = ((i + q) % n + n) % n;     // Gegenstrang: (−)-Strang j trifft (+)-Strang i bei q = j − i
+            weave.push([offAt(1, i, q), offAt(-1, j, q), i, j]);
+          }
+        }
+        const { N, B } = frames(pts, nrm);
+        head.addTube(pts, N, B, w, ts, false); strutCount++;
+      }
+    }
+  }
+  /* ---------- Wandhalter ---------- */
+  const hold = new MeshBuilder();
+  const Ma = Math.max(32, Math.min(96, Math.round(p.aufloesung / 3))), ct = [], st = [];
+  for (let k = 0; k < Ma; k++) { ct.push(Math.cos(2 * Math.PI * k / Ma)); st.push(Math.sin(2 * Math.PI * k / Ma)); }
+  const zAx = [0, 0, 1], n2 = [1, 0, 0];
+  const ringAt = (C, t, r) => { const n1 = cross(n2, t);
+    return ct.map((c, k) => [C[0] + r * (c * n1[0] + st[k] * n2[0]), C[1] + r * (c * n1[1] + st[k] * n2[1]), C[2] + r * (c * n1[2] + st[k] * n2[2])]); };
+  const arc = [];
+  const K = g.alpha > 1e-6 ? Math.max(2, Math.ceil(g.alpha / (6 * Math.PI / 180))) : 0;
+  for (let k = 1; k <= K; k++) {
+    const f = g.alpha * k / K, t = [0, -Math.sin(f), Math.cos(f)];
+    arc.push([[0, -g.Rbend * (1 - Math.cos(f)), g.zBend + g.Rbend * Math.sin(f)], t]);
+  }
+  const pegEnd = [0, g.O[1] + SPOT_ZAPFEN * g.tA[1], g.O[2] + SPOT_ZAPFEN * g.tA[2]];
+  const path = (r, startZ) => [ringAt([0, 0, startZ], zAx, r), ringAt([0, 0, g.zBend], zAx, r), ...arc.map(([C, t]) => ringAt(C, t, r)), ringAt(g.O, g.tA, r)];
+  const outer = path(g.ra, g.T), inner = path(g.rk, 0);
+  const shoulderIn = ringAt(g.O, g.tA, g.rp), pegO = ringAt(pegEnd, g.tA, g.rp), pegI = ringAt(pegEnd, g.tA, g.rk);
+  addBands(hold, outer, false);                     // Armmantel
+  addBands(hold, [outer[outer.length - 1], shoulderIn], false);   // Schulter
+  addBands(hold, [shoulderIn, pegO], false);        // Zapfen
+  addBands(hold, [pegO, pegI], false);              // Stirnfläche des Zapfens
+  addBands(hold, [...inner, pegI], true);           // Kabelkanal
+  // Platte: Umriss, gesenkte Schraubenlöcher auf der x-Achse; oben schließt der Arm an, unten der Kabelkanal
+  const Mp = Math.max(48, Math.min(160, Math.round(p.aufloesung / 1.5))), Ms = 32;
+  let outline;
+  if (g.round) outline = Array.from({ length: Mp }, (_, k) => [g.hx * Math.cos(2 * Math.PI * k / Mp), g.hx * Math.sin(2 * Math.PI * k / Mp)]);
+  else {
+    const rr = Math.min(8, 0.45 * Math.min(g.hx, g.hy)), kc = Math.max(4, Math.ceil(Mp / 16)), cc = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+    outline = [];
+    cc.forEach(([sx, sy], q) => { for (let j = 0; j <= kc; j++) { const an = (q + j / kc) * Math.PI / 2;
+      outline.push([sx * (g.hx - rr) + rr * Math.cos(an), sy * (g.hy - rr) + rr * Math.sin(an)]); } });
+  }
+  const circ = (cx, r) => Array.from({ length: Ms }, (_, k) => { const an = 2 * Math.PI * (k + 0.5) / Ms; return [cx + r * Math.cos(an), r * Math.sin(an)]; });
+  const xs = [-g.a / 2, g.a / 2], countersunk = g.cs > 0.05;
+  const face = (holes, z, up) => {
+    const cw = holes.map(h => h.map(q => [q[0], q[1]]).reverse()), tris = triangulate(outline, cw), all = [...outline, ...cw.flat()];
+    const base = hold.vcount;
+    for (const [x, y] of all) hold.v(x, y, z);
+    for (const [i, j, k] of tris) if (up) hold.idx.push(base + i, base + j, base + k); else hold.idx.push(base + i, base + k, base + j);
+  };
+  face([...xs.map(x => circ(x, g.rs + (countersunk ? g.cs : 0))), outer[0]], g.T, true);
+  face([...xs.map(x => circ(x, g.rs)), inner[0]], 0, false);
+  addBands(hold, [outline.map(([x, y]) => [x, y, 0]), outline.map(([x, y]) => [x, y, g.T])], false);
+  for (const x of xs) {
+    const lv = [circ(x, g.rs).map(([u, v]) => [u, v, 0])];
+    if (countersunk) lv.push(circ(x, g.rs).map(([u, v]) => [u, v, g.T - g.cs]), circ(x, g.rs + g.cs).map(([u, v]) => [u, v, g.T]));
+    else lv.push(circ(x, g.rs).map(([u, v]) => [u, v, g.T]));
+    addBands(hold, lv, true);
+  }
+  // Ausrichtung: ganzen Halter um die Wandnormale drehen
+  for (let i = 0; i < hold.pos.length; i += 3) { const q = rotZ([hold.pos[i], hold.pos[i + 1], 0], g.beta); hold.pos[i] = q[0]; hold.pos[i + 1] = q[1]; }
+  /* ---------- Zusammenbau ---------- */
+  const xH = rotZ([0, -Math.cos(g.alpha), -Math.sin(g.alpha)], g.beta), yH = rotZ([1, 0, 0], g.beta), zH = rotZ(g.tA, g.beta), O = rotZ(g.O, g.beta);
+  const mat = o => [xH[0], xH[1], xH[2], 0, yH[0], yH[1], yH[2], 0, zH[0], zH[1], zH[2], 0, o[0], o[1], o[2], 1];
+  const toModel = q => [O[0] + q[0] * xH[0] + q[1] * yH[0] + q[2] * zH[0], O[1] + q[0] * xH[1] + q[1] * yH[1] + q[2] * zH[1], O[2] + q[0] * xH[2] + q[1] * yH[2] + q[2] * zH[2]];
+  const bmin = [Infinity, Infinity, Infinity], bmax = [-Infinity, -Infinity, -Infinity];
+  const grow3 = q => { for (let d = 0; d < 3; d++) { bmin[d] = Math.min(bmin[d], q[d]); bmax[d] = Math.max(bmax[d], q[d]); } };
+  for (let i = 0; i < hold.pos.length; i += 3) grow3([hold.pos[i], hold.pos[i + 1], hold.pos[i + 2]]);
+  let headR = 0;
+  for (let i = 0; i < head.pos.length; i += 3) { grow3(toModel([head.pos[i], head.pos[i + 1], head.pos[i + 2]])); headR = Math.max(headR, Math.hypot(head.pos[i], head.pos[i + 1])); }
+  // Abstand zur Wand bzw. Platte: tiefster Punkt des Kopfes in Wandrichtung (unabhängig von der Ausrichtung)
+  let minZ = Infinity, reach = -Infinity;
+  for (const prof of spotProfiles(g)) for (const [r, z] of prof) {
+    minZ = Math.min(minZ, g.O[2] + z * Math.cos(g.alpha) - r * Math.sin(g.alpha));
+    reach = Math.max(reach, g.O[2] + z * Math.cos(g.alpha) + r * Math.sin(g.alpha));
+  }
+  const clearance = minZ - g.T;
+  /* ---------- Prüfungen ---------- */
+  const lampR = p.spotLampeD / 2, lz0 = SPOT_ZAPFEN, lz1 = lz0 + p.spotLampeL;
+  const innerFree = z => {
+    const rim = g.struct ? g.rimT / 2 : g.wall / 2;
+    if (g.lip && z > g.L - g.lipDepth) return g.rOpen;
+    if (g.struct && z > g.z0 && z < g.z1) return g.rm(z) - g.ts / 2 - g.maxOff;
+    return g.rm(z) - rim;
+  };
+  let lampFree = Infinity;
+  for (let i = 0; i <= 40; i++) { const z = lz0 + (Math.min(lz1, g.L) - lz0) * i / 40; lampFree = Math.min(lampFree, innerFree(z) - lampR); }
+  if (g.Rb > g.RbWant + 1e-6)
+    warnings.push(W('spotKegel', `Der Kegel ist zu spitz: Hinten braucht der Kopf mindestens ${de(2 * g.Rb)} mm Durchmesser für Buchse und Rückwand. Konizität verringern.`));
+  if (g.rOpen > g.rOpenWant + 0.05 && g.rOpenWant < g.rm(g.L) - g.tFront - 0.3)
+    warnings.push(W('spotOeffnung', `Die Frontöffnung ist für diese Tiefe zu klein, gebaut werden ${de(2 * g.rOpen)} mm (die Lippe hat eine 45°-Fase und darf höchstens bis zur halben Tiefe reichen).`));
+  if (g.fr && p.spotFrontringBreite > g.fb + 1e-6)
+    warnings.push(W('spotFrontring', `Der Frontring ist für diese Tiefe zu breit, gebaut werden ${de(g.fb)} mm (45°-Fase).`));
+  if (g.korb && !g.struct)
+    warnings.push(W('spotKorbHoehe', 'Für die Korbstruktur ist der Kopf zu kurz: Topf und Randring füllen die ganze Tiefe. Spotkopftiefe erhöhen oder Randhöhe senken.'));
+  else if (g.struct && p.spotKorbHoehe > g.Hs + 1e-6)
+    warnings.push(W('spotKorbHoehe', `Die Strukturhöhe passt nicht in den Kopf, gebaut werden ${de(g.Hs)} mm (hinten bleibt der Topf, vorn der Randring).`));
+  if (g.struct && g.rimT < g.needRim - 1e-6)
+    warnings.push(W('spotRand', `Die Randringe sind dünner als die Streben samt Versatz (${de(g.needRim)} mm nötig): Strebenenden schauen aus den Ringen.`));
+  if (g.struct && g.contact < 0.3)
+    warnings.push(W('spotLose', `Die Streben überdecken sich an den Kreuzungen nur ${de(g.contact, 2)} mm (nötig mind. 0,3 mm), sie halten so nicht zusammen. Strukturintensität verringern oder Streben stärker machen.`));
+  if (g.struct && g.bridge > SPOT_BRUECKE)
+    warnings.push(W('spotBruecke', `Ringe und Randring hängen zwischen den Streben ${g.bridge.toFixed(0)} mm frei. Über ${SPOT_BRUECKE} mm wird die Brücke beim Druck unsauber. Mehr Streben verwenden.`));
+  if (g.struct && g.cell < 1.5)
+    warnings.push(W('spotMasche', `Die Maschen sind nur ${de(Math.max(0, g.cell))} mm offen und drucken leicht zu. ${g.diag ? 'Weniger Streben oder kleinerer Flechtwinkel.' : 'Größerer Maschenabstand oder weniger Streben.'}`));
+  if (g.struct && (g.ts < g.minStrut - 1e-9 || g.w < g.minStrut - 1e-9) || g.wall < g.minWall - 1e-9)
+    warnings.push(W('spotFein', `Für eine ${de(p.spotDuese, 2)}-mm-Düse sind Streben unter ${de(g.minStrut, 2)} mm bzw. Wände unter ${de(g.minWall, 2)} mm zu fein.`));
+  if (maxOver > OVERHANG_MAX)
+    warnings.push(W('spotUeberhang', `Spotkopf (auf der Rückwand gedruckt): Streben bzw. Mantel bis ${maxOver.toFixed(0)}° geneigt. Ab etwa ${OVERHANG_MAX}° braucht es Stützen. Flechtwinkel oder Konizität verringern.`));
+  if (p.spotWinkel > OVERHANG_MAX)
+    warnings.push(W('spotArm', `Der Arm knickt um ${p.spotWinkel}°. Der Halter wird auf der Platte gedruckt; ab ${OVERHANG_MAX}° braucht der Knick Stützen.`));
+  if (clearance < 2)
+    warnings.push(W('spotAbstand', `Der geneigte Kopf kommt der Wandplatte bis auf ${de(clearance)} mm nahe${clearance < 0 ? ' und steckt darin' : ''}. Wandabstand erhöhen.`));
+  if (Math.abs(g.hx - g.hxWant) > 1e-6 || Math.abs(g.hy - g.hyWant) > 1e-6 || Math.abs(g.a - p.spotSchraubenAbstand) > 1e-6)
+    warnings.push(W('spotSchraube', `Schraubenlöcher passen so nicht neben Arm und Rand. Gebaut wird mit ${g.a.toFixed(0)} mm Lochabstand auf ${(2 * g.hx).toFixed(0)}${g.round ? '' : ' × ' + (2 * g.hy).toFixed(0)} mm Platte.`));
+  if (g.cs < g.csWant - 1e-6)
+    warnings.push(W('spotPlatte', `Die Platte ist für den Senkkopf zu dünn (Senkung ${de(g.csWant)} mm, Platte ${de(g.T)} mm). Platte dicker machen.`));
+  if (g.rk < g.rkWant - 1e-6 || g.rp - g.rk < g.minWall - 1e-9)
+    warnings.push(W('spotZapfen', `Kabelkanal und Zapfen: Die Zapfenwand ist nur ${de(g.rp - g.rk, 2)} mm stark. Kabelkanal kleiner oder Arm dicker.`));
+  if (lampFree < 0.5 || lz1 > g.L + 1e-6)
+    warnings.push(W('spotLampe', `Das Leuchtmittel (${p.spotLampeD} × ${p.spotLampeL} mm ab der Buchse) passt nicht in den Kopf${lz1 > g.L ? ': es steht vorn heraus' : ''}. Kopf größer oder tiefer machen.`));
+  if (g.rOpen < lampR + 0.5)
+    warnings.push(W('spotEinbau', `Das Leuchtmittel geht nicht durch die Frontöffnung (${de(2 * g.rOpen)} mm, Leuchtmittel ${p.spotLampeD} mm).`));
+  const tris = (head.idx.length + hold.idx.length) / 3;
+  if (tris > TRIS_MAX) warnings.push(W('dreiecke', 'Sehr viele Dreiecke. Auflösung oder Strebenzahl senken, falls der Slicer langsam wird.'));
+  if (!warnings.length) warnings.push({ ok: `Druckbar ohne Stützen: Spotkopf auf der Rückwand (max. ${maxOver.toFixed(0)}°), Halter auf der Platte (Knick ${p.spotWinkel}°).` });
+  const vol = mb => { let v = 0; for (let t = 0; t < mb.idx.length; t += 3) {
+    const a = mb.idx[t] * 3, b = mb.idx[t + 1] * 3, c = mb.idx[t + 2] * 3;
+    v += dot([mb.pos[a], mb.pos[a + 1], mb.pos[a + 2]], cross([mb.pos[b], mb.pos[b + 1], mb.pos[b + 2]], [mb.pos[c], mb.pos[c + 1], mb.pos[c + 2]])) / 6; } return v; };
+  const headVol = vol(head), holdVol = vol(hold);
+  const lampC = toModel([0, 0, (lz0 + Math.min(lz1, g.L)) / 2]);
+  return {
+    positions: new Float32Array(head.pos), indices: new Uint32Array(head.idx),
+    base: { positions: new Float32Array(hold.pos), indices: new Uint32Array(hold.idx), height: 0 },
+    insert: null, diffuser: null,
+    spot: { matrix: mat(O), matrixExploded: mat([O[0] + 30 * zH[0], O[1] + 30 * zH[1], O[2] + 30 * zH[2]]), bbox: { min: bmin, max: bmax },
+      lamp: lampC, g, weave, strutCount, clearance, reach, headR, headVol, holdVol, check: null },
+    stats: { H: bmax[1] - bmin[1], width: bmax[0] - bmin[0], depth: bmax[2] - bmin[2], volume: headVol + holdVol, tris, maxOverhang: maxOver,
+      maxR: Math.max(bmax[0] - bmin[0], bmax[1] - bmin[1], bmax[2] - bmin[2]) / 2, baseH: 0, lip: 0, strands: g.n, basket: null, knit: null },
+    warnings,
+  };
+}
+
+/* =====================================================================
    OpenSCAD-Export: schreibt die aktuellen Werte als Voreinstellungen in die Vorlage
    (makerworld/lampenschirm.scad). Eine gelernte Form kommt als Radiusfeld mit, geglättet wie in der App.
    ===================================================================== */
@@ -1945,19 +2536,43 @@ const diffMesh = new THREE.Mesh(new THREE.BufferGeometry(), diffMaterial);
 diffMesh.rotation.x = Math.PI;
 diffMesh.receiveShadow = true;
 lampGroup.add(diffMesh);
+// Wand hinter dem Wandspot (nur Vorschau): Ebene y = 0, Vorderseite zur Kamera, fängt die Schatten des Korbs
+const wallMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ color: 0xd9cbb5, roughness: 0.95 }));
+wallMesh.rotation.x = Math.PI / 2;
+wallMesh.receiveShadow = true;
+scene.add(wallMesh);
 
 let night = false;
 let exploded = false;
 let current = null;
 let firstFrame = true;
 
+// Wandspot: Modell (Wand in der xy-Ebene, z von der Wand weg) wird aufgerichtet; Modell-y zeigt nach oben,
+// Modell-z zur Kamera (Welt -y). Die Platte liegt an der Wand y = 0.
+function spotView() {
+  const b = current.spot.bbox, size = Math.max(b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]);
+  const lift = -b.min[1] + Math.max(40, size * 0.6);
+  return { size, lift, center: [(b.min[0] + b.max[0]) / 2, -(b.min[2] + b.max[2]) / 2, lift + (b.min[1] + b.max[1]) / 2], top: lift + b.max[1] };
+}
+
 function applyScene() {
-  const s = current.stats, H = s.H, totalH = H + s.baseH;
-  const size = Math.max(totalH, s.width, s.depth);
-  const lift = night && !s.baseH && P.fassungPos !== 'boden' ? H * 0.9 : 0;
+  const s = current.stats, H = s.H, spot = current.spot, sv = spot ? spotView() : null;
+  const totalH = spot ? sv.top : H + s.baseH;
+  const size = spot ? sv.size : Math.max(totalH, s.width, s.depth);
+  const lift = spot ? sv.lift : night && !s.baseH && P.fassungPos !== 'boden' ? H * 0.9 : 0;
   lampGroup.position.z = lift;
-  // Schirmrand sitzt in der Nut des Sockels; zerlegt schwebt der Schirm darüber
-  shade.position.z = s.baseH ? s.baseH - s.lip + (exploded ? Math.max(40, H * 0.3) : 0) : 0;
+  lampGroup.rotation.x = spot ? Math.PI / 2 : 0;
+  shade.matrixAutoUpdate = !spot;
+  if (spot) {
+    // Spotkopf sitzt auf dem Zapfen; zerlegt ist er entlang seiner Achse abgezogen
+    shade.matrix.fromArray(exploded ? spot.matrixExploded : spot.matrix);
+    shade.matrixWorldNeedsUpdate = true;
+  } else {
+    // Schirmrand sitzt in der Nut des Sockels; zerlegt schwebt der Schirm darüber
+    shade.position.z = s.baseH ? s.baseH - s.lip + (exploded ? Math.max(40, H * 0.3) : 0) : 0;
+  }
+  wallMesh.visible = !!spot;
+  if (spot) { wallMesh.scale.set(size * 10, size * 6, 1); wallMesh.position.set(0, 0.05, size * 3); }
 
   scene.background = new THREE.Color(night ? 0x0b0907 : 0x2a241d);
   hemi.visible = sun.visible = floor.visible = grid.visible = !night;
@@ -1966,8 +2581,9 @@ function applyScene() {
 
   floor.scale.set(size * 6, size * 6, 1);
   grid.scale.set(size * 3, 1, size * 3);
-  sun.position.set(size * 1.2, -size * 1.6, size * 2.4);
-  sun.target.position.set(0, 0, totalH / 2);
+  const sc0 = spot ? sv.center : [0, 0, totalH / 2];
+  sun.position.set(sc0[0] + size * 1.2, sc0[1] - size * 1.6, sc0[2] + size * 2.4);
+  sun.target.position.set(sc0[0], sc0[1], sc0[2]);
   const sc = sun.shadow.camera;
   sc.left = sc.bottom = -size * 1.3; sc.right = sc.top = size * 1.3;
   sc.near = 1; sc.far = size * 8; sc.updateProjectionMatrix();
@@ -1979,15 +2595,18 @@ function applyScene() {
   roomFloor.scale.set(roomR, roomR, 1);
   const mount = P.fassung ? P.fassungPos : 'keine';
   const inFloor = mount === 'boden';
-  const led = ((mount === 'sockel' && s.baseH) || inFloor) && P.einsatz !== 'fassung' ? P.einsatz : null;
+  const led = !spot && ((mount === 'sockel' && s.baseH) || inFloor) && P.einsatz !== 'fassung' ? P.einsatz : null;
   const bulbZ = lift + (led ? s.baseH + (inFloor ? P.bodenDicke : 0) + 25
     : (mount === 'sockel' && s.baseH) || inFloor ? s.baseH + Math.min(55, H * 0.3)
     : mount === 'oben' ? s.baseH + H * 0.62 : mount === 'unten' ? s.baseH + H * 0.38 : s.baseH + H / 2);
-  bulbLight.position.set(0, 0, bulbZ);
+  // Im Wandspot sitzt das Leuchtmittel in der Mitte des Kopfes (Modell -> Welt: x, -z, y + Anhebung)
+  const lm = spot ? spot.lamp.map((v, i) => v + (exploded ? 30 * spot.matrix[8 + i] : 0)) : null;
+  const bulbPos = spot ? [lm[0], -lm[2], lm[1] + lift] : [0, 0, bulbZ];
+  bulbLight.position.set(...bulbPos);
   bulbLight.shadow.camera.far = roomR * 3;
   bulb.visible = !led;
-  bulb.position.set(0, 0, bulbZ);
-  bulb.scale.setScalar(Math.min(s.maxR * 0.3, 30));
+  bulb.position.set(...bulbPos);
+  bulb.scale.setScalar(spot ? P.spotLampeD * 0.3 : Math.min(s.maxR * 0.3, 30));
   // Im Sockel sitzt das Leuchtmittel versenkt im Deckel, im Schirmboden liegt es auf der Bodenplatte
   const ledT = inFloor ? Math.max(2, P.einsatzTiefe) : Math.max(2, Math.min(P.einsatzTiefe, s.baseH - 6));
   ledPanel.visible = led === 'panel';
@@ -2013,11 +2632,12 @@ function applyScene() {
 }
 
 function frameCamera() {
-  const s = current.stats, totalH = s.H + s.baseH + (exploded && s.baseH ? Math.max(40, s.H * 0.3) : 0), size = Math.max(totalH, s.width, s.depth);
-  const cz = lampGroup.position.z + totalH / 2;
-  controls.target.set(0, 0, cz);
+  const s = current.stats, sv = current.spot ? spotView() : null;
+  const totalH = sv ? sv.top : s.H + s.baseH + (exploded && s.baseH ? Math.max(40, s.H * 0.3) : 0), size = sv ? sv.size : Math.max(totalH, s.width, s.depth);
+  const c = sv ? sv.center : [0, 0, lampGroup.position.z + totalH / 2];
+  controls.target.set(...c);
   const dist = night ? Math.min(size * 2.4, Math.max(s.maxR * 7, totalH * 3.2) * 0.85) : size * 2.4;
-  camera.position.set(dist * 0.62, -dist * 0.78, cz + dist * 0.3);
+  camera.position.set(c[0] + dist * 0.62, c[1] - dist * 0.78, c[2] + dist * 0.3);
   camera.near = Math.max(0.5, size / 200); camera.far = size * 60;
   camera.updateProjectionMatrix();
   controls.update();
@@ -2072,15 +2692,43 @@ function doRebuild() {
   document.getElementById('btnStlBase').hidden = !current.base;
   document.getElementById('btnStlDiff').hidden = !current.diffuser;
   document.getElementById('btnExplode').hidden = !current.base;
+  document.getElementById('btnStl').textContent = current.spot ? 'STL Spotkopf' : 'STL Schirm';
+  document.getElementById('btnStlBase').textContent = current.spot ? 'STL Wandhalter' : 'STL Sockel';
+  document.getElementById('btnScad').hidden = !!current.spot;
   busy.classList.remove('show');
 }
 
 const fmt = v => (Math.round(v * 100) / 100).toLocaleString('de-DE', { maximumFractionDigits: 2 });
 
+// Kurzfassung einer Netzprüfung (meshReport) für Kennzahlen und Meldungen
+const checkText = c => `${c.shells} Körper → ${c.parts === 1 ? 'ein Teil' : c.parts + ' getrennte Teile'}, `
+  + (c.closed ? 'alle geschlossen' : `${c.openEdges} offene / ${c.nonManifold} mehrfache Kanten`)
+  + (c.degenerate ? `, ${c.degenerate} entartete Dreiecke` : '') + (c.inverted ? `, ${c.inverted} verkehrt orientiert` : '');
+const checkOK = c => c.closed && c.connected && !c.degenerate && !c.inverted;
+
+function spotRows() {
+  const sp = current.spot, g = sp.g, s = current.stats, gr = v => (v / 1000 * 1.24).toFixed(0);
+  const name = ITEM.spotMuster.opts.find(o => o[0] === g.muster)[1].replace(/ \(.*\)$/, '');
+  const ck = sp.check || {};
+  return [
+    ['Spotkopf', `Ø ${fmt(2 * g.Rf)} × ${fmt(g.L)} mm` + (g.Rb < g.Rf - 0.05 ? `, hinten Ø ${fmt(2 * g.Rb)}` : '')],
+    ['Frontöffnung', `Ø ${fmt(2 * g.rOpen)} mm`],
+    ['Ausladung', `${fmt(sp.reach)} mm ab Wand, Knick ${P.spotWinkel}°`],
+    ['Korbstruktur', g.struct ? `${name}: ${sp.strutCount} Streben, ${fmt(g.Hs)} mm` : g.korb ? 'kein Platz (siehe Warnung)' : 'aus (geschlossener Mantel)'],
+    ...(g.struct ? [['Strebe', `${fmt(g.w)} × ${fmt(g.ts)} mm, Überdeckung ${fmt(g.contact)} mm`],
+      ['Masche / Brücke', `${fmt(Math.max(0, g.cell))} mm offen, ${fmt(Math.max(0, g.bridge))} mm frei`]] : []),
+    ['Druckteile', 'Spotkopf + Wandhalter'],
+    ['Dreiecke', s.tris.toLocaleString('de-DE')],
+    ['Filament (PLA)', `ca. ${gr(sp.headVol)} + ${gr(sp.holdVol)} g`],
+    ['Netz Spotkopf', ck.kopf ? (checkOK(ck.kopf) ? '✓ ' : '✗ ') + checkText(ck.kopf) : 'wird beim STL-Export geprüft'],
+    ['Netz Wandhalter', ck.halter ? (checkOK(ck.halter) ? '✓ ' : '✗ ') + checkText(ck.halter) : 'wird beim STL-Export geprüft'],
+  ];
+}
+
 function renderStats() {
   const s = current.stats;
   const grams = s.volume / 1000 * 1.24;
-  const rows = [
+  const rows = current.spot ? spotRows() : [
     ['Höhe', (s.H + s.baseH).toFixed(0) + ' mm' + (s.baseH ? ` (Schirm ${s.H.toFixed(0)})` : '')],
     ['Breite × Tiefe', `${s.width.toFixed(0)} × ${s.depth.toFixed(0)} mm`],
     ...(P.grundform !== 'param' ? [['Grundform', FORMEN.has(P.grundform) ? 'STL: ' + FORMEN.get(P.grundform).name.replace(/</g, '&lt;') : 'fehlt']] : []),
@@ -2122,6 +2770,7 @@ function codesOf(p) {
 }
 
 function estimateTris(p) {
+  if (p.lampentyp === 'wandspot') return buildWandspot(p).stats.tris;
   const per = (WEBART[p.webart] || WEBART.leinwand).length;
   const weaveOn = p.muster === 'geflecht' && p.drehung > 0 && p.webTiefe > 0;
   const n = weaveOn ? Math.ceil(p.straenge / per) * per : p.straenge;
@@ -2222,6 +2871,7 @@ async function fixTris(p) {
   const q = { ...p };
   const good = x => estimateTris(x) <= TRIS_MAX * 0.95;
   if (await nudge(q, 'aufloesung', 80, good)) return q;
+  if (p.lampentyp === 'wandspot') { await nudge(q, 'spotStreben', 8, good); return q; }
   // Weniger, dafür breitere Stränge, damit die Lampe gleich dicht bleibt
   const n0 = q.straenge, b0 = q.strangBreite;
   await nudge(q, 'straenge', 20, good);
@@ -2268,7 +2918,52 @@ const FIXES = {
   speichen: fixSpokes,
   passtBoden: p => fixByRadius(p, 'passtBoden'),
   passtSockel: p => fixByRadius(p, 'passtSockel'),
+  // Wandspot: die verursachenden Werte so wenig wie nötig ändern
+  spotKegel: p => fixUntil(p, 'spotKegel', [['spotKegel', 0]]),
+  spotOeffnung: async p => ({ ...p, spotOeffnung: snap('spotOeffnung', Math.ceil(2 * spotGeom(p).rOpen)) }),
+  spotFrontring: async p => ({ ...p, spotFrontringBreite: snap('spotFrontringBreite', Math.floor(spotGeom(p).fb * 2) / 2) }),
+  spotKorbHoehe: async p => {
+    const g = spotGeom(p);
+    if (g.HsMax >= 4) return { ...p, spotKorbHoehe: snap('spotKorbHoehe', Math.floor(g.HsMax)) };
+    return fixUntil(p, 'spotKorbHoehe', [['spotRandHoehe', 2], ['spotTiefe', ITEM.spotTiefe.max]]);
+  },
+  spotRand: async p => ({ ...p, spotRand: snap('spotRand', Math.ceil(spotGeom(p).needRim * 10) / 10) }),
+  spotLose: async p => {
+    const g = spotGeom(p), A = g.muster === 'korb' ? g.ts - 0.4 : (g.ts - 0.4) / 2;
+    const q = { ...p, spotHub: snap('spotHub', Math.max(0, Math.floor(A / 0.05) * 0.05)) };
+    return { ...q, spotRand: Math.max(q.spotRand, snap('spotRand', Math.ceil(spotGeom(q).needRim * 10) / 10)) };
+  },
+  spotBruecke: p => fixUntil(p, 'spotBruecke', [['spotStreben', ITEM.spotStreben.max]]),
+  spotMasche: p => fixUntil(p, 'spotMasche', spotGeom(p).diag ? [['spotStreben', 4], ['spotFlechtwinkel', 15]] : [['spotMasche', 30], ['spotStreben', 4]]),
+  spotFein: async p => {
+    const g = spotGeom(p), up = (k, v) => Math.max(p[k], snap(k, Math.ceil(v * 10) / 10));
+    return { ...p, spotWand: up('spotWand', g.minWall), ...(g.korb ? { spotStrebeStaerke: up('spotStrebeStaerke', g.minStrut), spotStrebeBreite: up('spotStrebeBreite', g.minStrut) } : {}) };
+  },
+  spotUeberhang: p => fixUntil(p, 'spotUeberhang', [['spotFlechtwinkel', 15], ['spotKegel', 0]]),
+  spotArm: async p => ({ ...p, spotWinkel: OVERHANG_MAX }),
+  spotAbstand: p => fixUntil(p, 'spotAbstand', [['spotWandabstand', ITEM.spotWandabstand.max]]),
+  spotSchraube: async p => {
+    // Lochabstand auf den nächsten Wert im Raster, der neben den Arm passt; die Platte nur so weit vergrößern,
+    // wie es die Löcher samt Rand brauchen (auf ganze mm aufgerundet)
+    const g = spotGeom(p), lo = Math.ceil(2 * (g.ra + g.rkopf + 1.5)), hiNow = Math.floor(2 * (g.hxWant - g.rkopf - 2));
+    const a = snap('spotSchraubenAbstand', Math.min(Math.max(p.spotSchraubenAbstand, lo), Math.max(lo, hiNow)));
+    const q = { ...p, spotSchraubenAbstand: a };
+    q.spotPlatteB = Math.max(p.spotPlatteB, snap('spotPlatteB', Math.ceil(2 * (a / 2 + g.rkopf + 2))));
+    if (!g.round) q.spotPlatteH = Math.max(p.spotPlatteH, snap('spotPlatteH', Math.ceil(2 * Math.max(g.rkopf + 2, g.ra + 2))));
+    return q;
+  },
+  spotPlatte: async p => ({ ...p, spotPlatteDicke: snap('spotPlatteDicke', Math.ceil((spotGeom(p).csWant + 1) * 2) / 2) }),
+  spotZapfen: async p => { const g = spotGeom(p); return { ...p, spotKabelD: snap('spotKabelD', Math.floor((g.rp - Math.max(0.8, g.minWall)) * 2 * 2) / 2) }; },
+  spotLampe: p => fixUntil(p, 'spotLampe', [['spotKegel', 0], ['spotD', ITEM.spotD.max], ['spotTiefe', ITEM.spotTiefe.max]]),
+  spotEinbau: async p => ({ ...p, spotOeffnung: snap('spotOeffnung', Math.ceil(p.spotLampeD + 2)) }),
 };
+
+// Stellschrauben der Reihe nach bis zur Grenze bewegen (binäre Suche), bis die Warnung code verschwindet
+async function fixUntil(p, code, steps) {
+  const q = { ...p }, good = x => !codesOf(x).has(code);
+  for (const [k, lim] of steps) if (await nudge(q, k, lim, good)) break;
+  return q;
+}
 
 // Korrigiert die gewünschten Warnungen und danach alles, was dadurch neu rot geworden ist
 async function runFix(code) {
@@ -2326,6 +3021,7 @@ function buildControls() {
   for (const g of SCHEMA) {
     const det = document.createElement('details');
     if (g.open) det.open = true;
+    if (g.typ) det.dataset.typ = g.typ;
     det.innerHTML = `<summary>${g.group}</summary><div class="group-body"></div>`;
     const body = det.querySelector('.group-body');
     for (const it of g.items) {
@@ -2561,6 +3257,17 @@ function updateEnabled() {
   if (!twisted) off.add('verdrehVerlauf');
   if (P.fassungPos !== 'oben') off.add('druckUmdrehen');
   if (!P.sockel) ['sockelHoehe', 'sockelUeberstand', 'sockelWand', 'sockelDeck', 'kabelD', 'lippe'].forEach(k => off.add(k));
+  // Wandspot: nur die eigenen Gruppen zeigen; Strukturregler nur, wenn sie für das Muster etwas bewirken
+  const spot = P.lampentyp === 'wandspot';
+  document.querySelectorAll('#controls details[data-typ]').forEach(d => { d.hidden = d.dataset.typ !== (spot ? 'wandspot' : 'schirm'); });
+  if (spot) off.add('druckUmdrehen');
+  if (P.spotForm !== 'konisch') off.add('spotKegel');
+  if (!P.spotFrontring) off.add('spotFrontringBreite');
+  if (P.spotPlatteForm === 'rund') off.add('spotPlatteH');
+  const strukturKeys = ['spotMuster', 'spotStreben', 'spotStrebeStaerke', 'spotStrebeBreite', 'spotMasche', 'spotFlechtwinkel', 'spotHub', 'spotKorbHoehe', 'spotRand', 'spotRandHoehe', 'spotKopfDreh'];
+  if (!P.spotKorb) strukturKeys.forEach(k => off.add(k));
+  if (['diagonal', 'kreuz', 'gitter'].includes(P.spotMuster)) off.add('spotMasche'); else off.add('spotFlechtwinkel');
+  if (P.spotMuster === 'gitter' || P.spotMuster === 'ringe') off.add('spotHub');
   document.querySelectorAll('.ctrl').forEach(el => el.classList.toggle('disabled', off.has(el.dataset.key)));
 }
 
@@ -2593,6 +3300,21 @@ function readHash() {
 function randomize() {
   const r = (a, b, step = 1) => Math.round((a + Math.random() * (b - a)) / step) * step;
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  if (P.lampentyp === 'wandspot') {
+    // Wandspot: Form und Muster würfeln, Strebenzahl so, dass die Brücken kurz bleiben; danach automatisch korrigieren
+    const D = r(60, 130), muster = pick(['korb', 'diagonal', 'kreuz', 'gitter', 'ringe']);
+    const obj = { lampentyp: 'wandspot', spotForm: pick(['zylinder', 'konisch']), spotD: D, spotTiefe: r(D * 0.9, D * 1.4),
+      spotKegel: r(4, 14, 0.5), spotOeffnung: Math.round(D * 0.8), spotFrontring: Math.random() < 0.6, spotKorb: true, spotMuster: muster,
+      spotStreben: Math.round(Math.PI * D / r(8, 13)), spotStrebeStaerke: r(1.6, 2.4, 0.1), spotStrebeBreite: r(1.8, 3, 0.1),
+      spotMasche: r(6, 12, 0.5), spotFlechtwinkel: r(25, 45), spotHub: r(0.3, 0.6, 0.05), spotWinkel: r(15, 50),
+      spotWandabstand: r(30, 70), spotKorbHoehe: 190, spotPlatteForm: pick(['rund', 'eckig']), farbe: P.farbe };
+    obj.spotKorbHoehe = Math.max(10, Math.floor(spotGeom({ ...DEFAULTS, ...obj }).HsMax));
+    applyAll(obj);
+    // Erst neu bauen, damit die Korrektur die Warnungen dieses Entwurfs sieht
+    clearTimeout(timer); doRebuild();
+    runFix('*').then(q => { if (describeChanges(P, q).length) applyAll(q); });
+    return;
+  }
   const H = r(120, 260);
   const rB = r(40, 110), rT = r(35, 110);
   const fine = Math.random() < 0.4;
@@ -2650,8 +3372,21 @@ document.getElementById('btnLight').onclick = e => {
   e.target.textContent = night ? 'Licht aus' : 'Licht an';
   applyScene(); frameCamera();
 };
-const fileBase = () => `${P.querschnitt === '0' ? 'rund' : P.querschnitt + 'eck'}_${P.hoehe}mm`;
+const fileBase = () => P.lampentyp === 'wandspot' ? `${P.spotMuster}_${P.spotD}x${P.spotTiefe}mm`
+  : `${P.querschnitt === '0' ? 'rund' : P.querschnitt + 'eck'}_${P.hoehe}mm`;
+// Wandspot: die gerade geschriebene STL wieder einlesen und als Netz prüfen (Körper, Kanten, Verbund)
+function exportSpot(part) {
+  const sp = current.spot, data = part === 'kopf' ? current : current.base;
+  const name = `wandspot_${part === 'kopf' ? 'spotkopf' : 'wandhalter'}_${fileBase()}.stl`;
+  const buf = toSTL(data.positions, data.indices, false, 0);
+  download(buf, name, 'model/stl');
+  const tri = parseSTL(buf), c = meshReport(tri, Uint32Array.from({ length: tri.length / 3 }, (_, i) => i));
+  sp.check = { ...sp.check, [part]: c };
+  renderStats();
+  toast(`STL gespeichert: ${name} · Netzprüfung: ${checkText(c)}`, 6000);
+}
 document.getElementById('btnStl').onclick = () => {
+  if (current.spot) return exportSpot('kopf');
   const flip = P.fassung && P.fassungPos === 'oben' && P.druckUmdrehen;
   const name = `lampenschirm_${fileBase()}.stl`;
   download(toSTL(current.positions, current.indices, flip, current.stats.H + current.stats.lip), name, 'model/stl');
@@ -2666,6 +3401,7 @@ document.getElementById('btnStlDiff').onclick = () => {
 };
 document.getElementById('btnStlBase').onclick = () => {
   if (!current.base) return;
+  if (current.spot) return exportSpot('halter');
   // Sockel steht kopfüber auf dem Deckel, so braucht er keine Stützen
   const name = `sockel_${fileBase()}.stl`;
   download(toSTL(current.base.positions, current.base.indices, true, current.base.height), name, 'model/stl');

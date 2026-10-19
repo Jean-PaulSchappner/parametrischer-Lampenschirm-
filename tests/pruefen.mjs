@@ -2,7 +2,7 @@
 // Aufruf:  node tests/pruefen.mjs              (ohne OpenSCAD-Vergleich)
 //          OPENSCAD="C:/Pfad/openscad.com" node tests/pruefen.mjs   (mit Vergleich App ↔ OpenSCAD)
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -15,7 +15,8 @@ const cut = (a, b) => { const i = html.indexOf(a), j = html.indexOf(b, i); if (i
 const code = cut('const SCHEMA = [', 'function download(') +
   "const fmt = v => (Math.round(v * 100) / 100).toLocaleString('de-DE', { maximumFractionDigits: 2 });\n" +
   cut('const ITEM = Object.fromEntries', "document.getElementById('warnings').addEventListener") +
-  '\nreturn { SCHEMA, ITEMS, DEFAULTS, PRESETS, FORMEN, buildLampshade, makeSurface, measureOverhang, analyzeSTL, formSampler, toSTL, scadExport, rrectRadius, runFix, describeChanges, setState: (p, c) => { P = p; current = c; } };';
+  '\nreturn { SCHEMA, ITEMS, DEFAULTS, PRESETS, FORMEN, buildLampshade, makeSurface, measureOverhang, analyzeSTL, formSampler, toSTL, scadExport, rrectRadius, runFix, describeChanges, setState: (p, c) => { P = p; current = c; },' +
+  ' meshReport, parseSTL, spotGeom, buildWandspotRaw, SPOT_ZAPFEN, SPOT_KEYS };';
 const A = new Function('let current;\n' + code)();
 const { DEFAULTS, PRESETS, FORMEN, buildLampshade, makeSurface, analyzeSTL, formSampler, toSTL, scadExport, rrectRadius, runFix, describeChanges } = A;
 
@@ -85,6 +86,13 @@ const broken = [
   ['Kanten zu stark gedreht', { ...PRESETS['Woven Light · Mitte gedreht'], drehUnten: -80, drehOben: 80 }],
   ['Diffusor zu dick', { ...PRESETS['Panel 120×160 · Sockel getrennt'], diffusorDichte: 100, diffusorNoppe: 1.5, diffusorDicke: 1 }],
   ['Mehrere Probleme', { ...PRESETS['Woven Light · Panel 120×160'], radiusUnten: 60, radiusOben: 60, drehung: 0.5, webTiefe: 1 }],
+  ['Wandspot: Kopf an der Wand, Knick 70°', { ...PRESETS['Wandspot · Korbgeflecht'], spotWandabstand: 5, spotWinkel: 70 }],
+  ['Wandspot: Streben ohne Kontakt', { ...PRESETS['Wandspot · Korbgeflecht'], spotHub: 2.4 }],
+  ['Wandspot: Brücken zu lang', { ...PRESETS['Wandspot · Korbgeflecht'], spotStreben: 10 }],
+  ['Wandspot: Leuchtmittel passt nicht', { ...PRESETS['Wandspot · Korbgeflecht'], spotLampeD: 80, spotLampeL: 95 }],
+  ['Wandspot: Schrauben passen nicht', { ...PRESETS['Wandspot · Stäbe + Ringe'], spotPlatteB: 40, spotPlatteH: 25, spotSchraubenAbstand: 30, spotPlatteDicke: 3 }],
+  ['Wandspot: Überhang Diagonale', { ...PRESETS['Wandspot · Diagonal'], spotFlechtwinkel: 60, spotForm: 'konisch', spotKegel: 15 }],
+  ['Wandspot: Kegel zu spitz, Struktur zu hoch', { ...PRESETS['Wandspot · Gitter'], spotKegel: 30, spotKorbHoehe: 190 }],
 ];
 for (const [label, pr] of broken) {
   const p = { ...DEFAULTS, ...pr }, before = buildLampshade(p);
@@ -111,7 +119,137 @@ for (const name of ['Käfig', 'Woven Light', 'Kissen-Stapel']) {
 }
 ok(codes(buildLampshade({ ...DEFAULTS, grundform: 'stl-fehlt' })).includes('formFehlt'), 'Fehlende Form wird gemeldet');
 
-/* ---------- 5. OpenSCAD ---------- */
+/* ---------- 5. Wandspot ---------- */
+console.log('\n5. Wandspot: Netz intern und in der exportierten STL, Maße, Streben, Flechtung, Parameter');
+const { meshReport, parseSTL, spotGeom, buildWandspotRaw, SPOT_ZAPFEN, SPOT_KEYS } = A;
+const spotP = (name, x = {}) => ({ ...DEFAULTS, ...PRESETS[name], ...x });
+const good = c => c.closed && c.openEdges === 0 && c.nonManifold === 0 && c.degenerate === 0 && c.inverted === 0;
+// STL schreiben, als Datei-Inhalt wieder einlesen (Dreiecksliste ohne Indizes) und prüfen
+const viaSTL = (pos, idx) => { const buf = toSTL(pos, idx, false, 0), tri = parseSTL(buf); return { buf, tri, rep: meshReport(tri, Uint32Array.from({ length: tri.length / 3 }, (_, i) => i)) }; };
+const near = (a, b, tol = 0.02) => Math.abs(a - b) <= tol;
+const spotNames = Object.keys(PRESETS).filter(n => n.startsWith('Wandspot'));
+for (const name of spotNames) {
+  const p = spotP(name), r = buildLampshade(p), g = r.spot.g;
+  const ih = meshReport(r.positions, r.indices), ib = meshReport(r.base.positions, r.base.indices);
+  const eh = viaSTL(r.positions, r.indices), eb = viaSTL(r.base.positions, r.base.indices);
+  const rims = g.struct ? 2 : 1;
+  // Maße des Kopfes: Tiefe, größter Durchmesser aus dem Profil; Halter: Wandseite auf z = 0, Ausladung bis zum Zapfen
+  const headDia = 2 * r.spot.headR, sa = Math.sin(g.alpha), ca = Math.cos(g.alpha);
+  const holdTop = Math.max(g.O[2] + SPOT_ZAPFEN * ca + g.rp * sa, g.O[2] + g.ra * sa);
+  ok(good(ih) && ih.connected && good(ib) && ib.connected && ih.shells === rims + r.spot.strutCount,
+    `${name}: intern Kopf ${ih.shells} Körper (${rims} Ring/Topf + ${r.spot.strutCount} Streben) → ${ih.parts} Teil, Halter ${ib.shells} Körper, alle geschlossen`);
+  ok(good(eh.rep) && eh.rep.connected && eh.rep.shells === ih.shells && eh.rep.tris === r.indices.length / 3 && good(eb.rep) && eb.rep.connected && eb.rep.shells === 1,
+    `  STL-Datei: Kopf ${eh.rep.tris} Dreiecke, ${eh.rep.shells} Körper, 0 offene/mehrfache Kanten, 0 entartet, verbunden; Halter ${eb.rep.tris} Dreiecke, 1 Körper`);
+  ok(near(eh.rep.size[2], g.L) && near(eh.rep.min[2], 0) && near(eh.rep.size[0], headDia, 0.05) && near(eb.rep.min[2], 0) && near(eb.rep.max[2], holdTop, 0.05)
+     && eb.rep.size[0] >= (g.round ? 2 * g.hx : 2 * g.hx) - 0.05,
+    `  Maße in der STL: Kopf ${eh.rep.size.map(v => v.toFixed(2)).join(' × ')} mm (Tiefe ${g.L}), Halter bis ${eb.rep.max[2].toFixed(2)} mm (erwartet ${holdTop.toFixed(2)})`);
+}
+
+// Streben sind echte Körper: ohne Struktur ein einziger Rotationskörper, mit Struktur Topf + Ring + n Streben (+ Reihen)
+{
+  const base = spotP('Wandspot · Korbgeflecht'), on = buildLampshade(base), off = buildLampshade({ ...base, spotKorb: false });
+  const g = on.spot.g, a = viaSTL(on.positions, on.indices).rep, b = viaSTL(off.positions, off.indices).rep;
+  ok(b.shells === 1 && a.shells === 2 + g.n + g.rows && on.spot.strutCount === g.n + g.rows && a.volume < b.volume,
+    `Korb an/aus in der STL: ${a.shells} Körper (2 + ${g.n} Stäbe + ${g.rows} Flechtreihen) gegen ${b.shells}; Volumen ${(a.volume / 1000).toFixed(1)} gegen ${(b.volume / 1000).toFixed(1)} cm³`);
+  // Jeder Stab trägt die Strebenstärke: radiale Ausdehnung eines Stabs = Strebenstärke
+  const shellsOf = (pos, idx) => {
+    const key = i => `${pos[i * 3].toFixed(4)},${pos[i * 3 + 1].toFixed(4)},${pos[i * 3 + 2].toFixed(4)}`, id = new Map(), par = [];
+    const f = x => { while (par[x] !== x) x = par[x] = par[par[x]]; return x; };
+    const vid = i => { const k = key(i); if (!id.has(k)) { id.set(k, par.length); par.push(par.length); } return id.get(k); };
+    const tv = []; for (let t = 0; t < idx.length; t += 3) { const v = [vid(idx[t]), vid(idx[t + 1]), vid(idx[t + 2])]; tv.push(v); par[f(v[0])] = f(v[1]); par[f(v[1])] = f(v[2]); }
+    const m = new Map(); for (let t = 0; t < tv.length; t++) { const k = f(tv[t][0]); if (!m.has(k)) m.set(k, new Set()); for (let e = 0; e < 3; e++) m.get(k).add(idx[t * 3 + e]); }
+    return [...m.values()].map(s => [...s].map(i => [pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]]));
+  };
+  // Über/unter im Netz nachgemessen: Mittellage jeder Flechtreihe an jedem Stab, relativ zur Wandmitte
+  const sh = shellsOf(on.positions, on.indices);
+  const rowsSh = sh.filter(v => { const zs = v.map(q => q[2]); return Math.max(...zs) - Math.min(...zs) < g.w + 0.5 && Math.max(...v.map(q => Math.hypot(q[0], q[1]))) > g.rmMin; });
+  let alt = 0, flips = 0, total = 0, prevSigns = null;
+  rowsSh.sort((x, y) => x[0][2] - y[0][2]);
+  for (const v of rowsSh) {
+    const zc = v.reduce((s, q) => s + q[2], 0) / v.length, signs = [];
+    for (let j = 0; j < g.n; j++) {
+      const phi = 2 * Math.PI * (j + 0.5) / g.n, sel = v.filter(q => Math.abs(Math.atan2(Math.sin(Math.atan2(q[1], q[0]) - phi), Math.cos(Math.atan2(q[1], q[0]) - phi))) < 0.25 * Math.PI / g.n);
+      const off = sel.reduce((s, q) => s + Math.hypot(q[0], q[1]), 0) / sel.length - g.rm(zc);
+      signs.push(Math.sign(Math.round(off * 100)));
+      if (Math.abs(Math.abs(off) - g.A) < 0.05) total++;
+    }
+    for (let j = 0; j < g.n; j++) if (signs[j] !== 0 && signs[j] === -signs[(j + 1) % g.n]) alt++;
+    if (prevSigns) for (let j = 0; j < g.n; j++) if (signs[j] === -prevSigns[j]) flips++;
+    prevSigns = signs;
+  }
+  ok(rowsSh.length === g.rows && alt === g.rows * g.n && flips === (g.rows - 1) * g.n && total === g.rows * g.n,
+    `Korbgeflecht im Netz: ${rowsSh.length} Reihen, an allen ${g.n} Stäben abwechselnd ±${g.A} mm vor/hinter dem Stab, Nachbarreihen gegenläufig`);
+  const st = sh.filter(v => { const zs = v.map(q => q[2]); return Math.max(...zs) - Math.min(...zs) > g.Hs; }).filter(v => v.length <= 40);
+  const radial = st.map(v => { const rs = v.map(q => Math.hypot(q[0], q[1]) - g.rm(q[2])); return Math.max(...rs) - Math.min(...rs); });
+  ok(st.length === g.n && radial.every(x => Math.abs(x * Math.cos(Math.atan(g.slope)) - g.ts) < 0.05),
+    `Stäbe im Netz: ${st.length} Stück, radiale Stärke ${radial.length ? (radial[0] * Math.cos(Math.atan(g.slope))).toFixed(2) : '–'} mm (Strebenstärke ${g.ts} mm)`);
+}
+
+// Flechtung der Diagonalmuster: an jeder Kreuzung liegt ein Strang genau über dem anderen (gleicher Betrag, Gegenseite)
+for (const name of ['Wandspot · Diagonal', 'Wandspot · Kreuzgeflecht']) {
+  const r = buildLampshade(spotP(name)), g = r.spot.g, wv = r.spot.weave;
+  const opp = wv.every(([a, b]) => near(a, -b, 1e-9) && near(Math.abs(a), g.A, 1e-9));
+  // Entlang eines Strangs: Leinwand wechselt an jeder Kreuzung, Köper 2/2 nach je zwei
+  const seq = wv.filter(x => x[2] === 0).map(x => Math.sign(x[0])), runs = [];
+  for (const s of seq) { if (runs.length && runs[runs.length - 1][0] === s) runs[runs.length - 1][1]++; else runs.push([s, 1]); }
+  const inner = runs.slice(1, -1).map(x => x[1]), want = g.muster === 'kreuz' ? 2 : 1;
+  ok(wv.length > 2 * g.n && opp && inner.length > 0 && inner.every(x => x === want),
+    `${name}: ${wv.length} Kreuzungen, jede über/unter um ±${g.A} mm, entlang des Strangs je ${want} über und ${want} unter`);
+}
+
+// Parameter wirken auf die erzeugte Geometrie (gemessen in der STL)
+{
+  const p = spotP('Wandspot · Korbgeflecht'), base = viaSTL(buildLampshade(p).positions, buildLampshade(p).indices).rep;
+  const m = x => { const r = buildLampshade({ ...p, ...x }); return { r, c: viaSTL(r.positions, r.indices).rep }; };
+  const d = m({ spotD: 110 }), n = m({ spotStreben: 36 }), t = m({ spotTiefe: 120 }), z = m({ spotForm: 'zylinder' }), w = m({ spotStrebeStaerke: 2.2 });
+  ok(near(d.c.size[0] - base.size[0], 20, 0.05) && n.c.shells - base.shells === 8 && near(t.c.size[2], 120)
+     && z.r.spot.g.Rb === z.r.spot.g.Rf && base.volume < w.c.volume,
+    `Spotkopf Ø +20 mm → Breite +${(d.c.size[0] - base.size[0]).toFixed(2)} mm; 36 statt 28 Stäbe → +${n.c.shells - base.shells} Körper; Tiefe 120 → ${t.c.size[2].toFixed(2)} mm; zylindrisch hinten Ø ${2 * z.r.spot.g.Rb}`);
+  const all = ['korb', 'diagonal', 'kreuz', 'gitter', 'ringe'].map(mu => buildLampshade({ ...p, spotMuster: mu }));
+  const sig = all.map(r => r.indices.length + ':' + r.positions.reduce((s, v, i) => s + v * (1 + (i % 7)), 0).toFixed(3));
+  ok(new Set(sig).size === 5 && all.every(r => good(meshReport(r.positions, r.indices))),
+    `Fünf Strukturtypen erzeugen fünf verschiedene, geschlossene Netze (${all.map(r => r.spot.strutCount + ' Streben').join(', ')})`);
+  // Halterungswinkel und Ausrichtung bewegen den Kopf: Achse des Kopfes = Knickrichtung
+  const k = buildLampshade({ ...p, spotWinkel: 60, spotAusrichtung: 90 }).spot.matrix, ax = [k[8], k[9], k[10]];
+  ok(near(ax[0], Math.sin(60 * Math.PI / 180), 1e-9) && near(ax[1], 0, 1e-9) && near(ax[2], Math.cos(60 * Math.PI / 180), 1e-9),
+    `Knick 60°, Ausrichtung 90° (rechts): Kopfachse ${ax.map(v => v.toFixed(3)).join(', ')}`);
+}
+
+// Cache: gleicher Schlüssel → gleiches Ergebnis; jede Änderung eines Geometriewerts → neue Geometrie
+{
+  const p = spotP('Wandspot · Korbgeflecht'), r0 = buildLampshade(p), hit = buildLampshade({ ...p }) === r0, changed = [];
+  for (const k of SPOT_KEYS) {
+    const it = A.ITEMS.find(i => i.k === k);
+    let v;
+    if (it.type === 'check') v = !p[k]; else if (it.type === 'select') v = it.opts.find(o => o[0] !== p[k])[0];
+    else v = p[k] + it.step * (p[k] + it.step * 3 <= it.max ? 3 : -3);
+    const r = buildLampshade({ ...p, [k]: v }), fresh = buildWandspotRaw({ ...p, [k]: v });
+    if (r === r0 || r.indices.length !== fresh.indices.length || r.positions.some((x, i) => x !== fresh.positions[i]) || r.base.positions.some((x, i) => x !== fresh.base.positions[i])) changed.push(k);
+  }
+  ok(hit && changed.length === 0, `Cache${changed.length ? ' (veraltet: ' + changed.join(', ') + ')' : ''}: Treffer bei gleichen Werten, ${SPOT_KEYS.length} Geometriewerte im Schlüssel, nach jeder Änderung frische Geometrie`);
+}
+
+// Zufällige Werte im ganzen Reglerbereich: Netz bleibt gültig; ohne Kontakt-Warnung auch zusammenhängend
+{
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const spotItems = A.ITEMS.filter(i => A.SPOT_KEYS.includes(i.k) && i.k !== 'aufloesung');
+  let bad = [], cnt = 0;
+  for (let c = 0; c < 60; c++) {
+    const p = { ...DEFAULTS, lampentyp: 'wandspot', aufloesung: 60 };
+    for (const it of spotItems) p[it.k] = it.type === 'check' ? rnd() < 0.8 : it.type === 'select' ? it.opts[Math.floor(rnd() * it.opts.length)][0]
+      : +(Math.round((it.min + rnd() * (it.max - it.min)) / it.step) * it.step).toFixed(4);
+    p.spotStreben = Math.min(p.spotStreben, 60); p.spotKorbHoehe = Math.min(p.spotKorbHoehe, 120);
+    let r;
+    try { r = buildLampshade(p); } catch (e) { bad.push(`#${c}: ${e.message}`); continue; }
+    const ih = meshReport(r.positions, r.indices, !codes(r).includes('spotLose')), ib = meshReport(r.base.positions, r.base.indices);
+    const lose = codes(r).includes('spotLose');
+    if (!good(ih) || !good(ib) || !ib.connected || (!lose && !ih.connected)) bad.push(`#${c}: ${JSON.stringify(Object.fromEntries(spotItems.map(i => [i.k, p[i.k]])))} ${JSON.stringify({ ...ih, min: 0, max: 0 })}`);
+    cnt++;
+  }
+  ok(bad.length === 0, `${cnt} zufällige Wandspots: alle Netze geschlossen, ohne entartete Dreiecke, Halter einteilig, Kopf zusammenhängend` + (bad.length ? '\n' + bad.slice(0, 3).join('\n') : ''));
+}
+
+/* ---------- 6. OpenSCAD ---------- */
 // OpenSCAD suchen: Umgebungsvariable, portable Version im Projekt (npm run openscad-holen), Standardinstallation, PATH
 function findOpenSCAD() {
   const tryRun = exe => { try { execFileSync(exe, ['--version'], { stdio: 'pipe' }); return exe; } catch { return null; } };
@@ -126,8 +264,8 @@ function findOpenSCAD() {
   for (const c of candidates) { const r = tryRun(c); if (r) return r; }
   return null;
 }
-const OS = findOpenSCAD();
-console.log('\n5. OpenSCAD-Fassung' + (OS ? ` (${OS})` : ' (Vergleich übersprungen: OpenSCAD nicht gefunden, „npm run openscad-holen“ lädt es)'));
+const OS = process.env.OHNE_OPENSCAD ? null : findOpenSCAD();
+console.log('\n6. OpenSCAD-Fassung' + (OS ? ` (${OS})` : ' (Vergleich übersprungen: OpenSCAD nicht gefunden, „npm run openscad-holen“ lädt es)'));
 const tplHtml = cut('<script type="text/plain" id="scad-vorlage">', '</script><!-- /scad-vorlage -->').replace('<script type="text/plain" id="scad-vorlage">\n', '');
 ok(tplHtml === scadFile, 'Eingebettete Vorlage in index.html entspricht makerworld/lampenschirm.scad');
 if (OS) {
@@ -169,6 +307,46 @@ if (OS) {
     const a = stats(jp), b = stats(readAsciiSTL(readFileSync(o, 'utf8')));
     const dSize = Math.max(...a.size.map((v, i) => Math.abs(v - b.size[i]))), dVol = Math.abs(a.vol - b.vol) / Math.abs(a.vol);
     ok(dSize < 0.3 && dVol < 0.01 && a.n === b.n, `${name} · ${teil}: Maße ±${dSize.toFixed(2)} mm, Volumen ±${(dVol * 100).toFixed(2)} %, Dreiecke ${a.n}/${b.n}, OpenSCAD ${sec.toFixed(1)} s`);
+  }
+  // Wandspot: Die Streben sind einzelne Körper, die sich durchdringen. Hier wird die exportierte STL in ihre Körper
+  // zerlegt und mit CGAL (OpenSCAD) wirklich vereinigt; erwartet wird genau ein mannigfaltiges Volumen.
+  for (const name of ['Wandspot · Korbgeflecht', 'Wandspot · Diagonal', 'Wandspot · Kreuzgeflecht', 'Wandspot · Gitter', 'Wandspot · Stäbe + Ringe']) {
+    const r = buildLampshade({ ...DEFAULTS, ...PRESETS[name], aufloesung: 60 });
+    const dv = new DataView(toSTL(r.positions, r.indices, false, 0)), nt = dv.getUint32(80, true), tris = [];
+    for (let i = 0; i < nt; i++) tris.push([0, 1, 2].map(k => [0, 1, 2].map(d => dv.getFloat32(84 + i * 50 + 12 + k * 12 + d * 4, true))));
+    const id = new Map(), par = [], f = x => { while (par[x] !== x) x = par[x] = par[par[x]]; return x; };
+    const vid = q => { const k = q.join(','); if (!id.has(k)) { id.set(k, par.length); par.push(par.length); } return id.get(k); };
+    const tv = tris.map(t => t.map(vid)); for (const t of tv) { par[f(t[0])] = f(t[1]); par[f(t[1])] = f(t[2]); }
+    const groups = new Map(); tv.forEach((t, i) => { const k = f(t[0]); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(tris[i]); });
+    let scad = 'union() {\n', j = 0;
+    for (const g of groups.values()) {
+      const buf = Buffer.alloc(84 + 50 * g.length); buf.writeUInt32LE(g.length, 80);
+      g.forEach((t, i) => t.forEach((q, k) => q.forEach((x, d) => buf.writeFloatLE(x, 84 + i * 50 + 12 + k * 12 + d * 4))));
+      writeFileSync(join(dir, `k${j}.stl`), buf); scad += ` import("k${j}.stl");\n`; j++;
+    }
+    writeFileSync(join(dir, 'v.scad'), scad + '}\n');
+    const t0 = Date.now(), res = spawnSync(OS, ['--render', '-o', join(dir, 'v.stl'), join(dir, 'v.scad')], { encoding: 'utf8' });
+    const log = (res.stdout || '') + (res.stderr || ''), vols = +(log.match(/Volumes:\s+(\d+)/) || [])[1];
+    const u = readAsciiSTL(readFileSync(join(dir, 'v.stl'), 'utf8')), rep = meshReport(u, Uint32Array.from({ length: u.length / 3 }, (_, i) => i), false);
+    // Maßgeblich ist CGALs exaktes Ergebnis („Simple“ = mannigfaltig). OpenSCAD 2021 schreibt nur 6 Stellen; dabei fallen
+    // Schnittkanten unter etwa 0,001 mm (Stellen, an denen sich Streben nur streifen) zusammen. Solche Fehler in der
+    // Textdatei sind erlaubt, wenn jedes flache Dreieck eine Kante unter 0,01 mm hat (weit unter der Slicer-Auflösung).
+    // Jedes entartete Dreieck und jede mehrfach benutzte Kante der Textdatei muss an einem Dreieck mit einer Kante
+    // unter 0,01 mm hängen, sonst ist es ein echter Fehler
+    const kk = q => q.map(x => Math.round(x * 1e4)).join(','), edgeTris = new Map();
+    let bad = 0;
+    for (let i = 0; i < u.length; i += 9) {
+      const P = k => [u[i + 3 * k], u[i + 3 * k + 1], u[i + 3 * k + 2]], v3 = [P(0), P(1), P(2)];
+      const e = [0, 1, 2].map(k => Math.hypot(...v3[k].map((x, d) => x - v3[(k + 1) % 3][d])));
+      const [a, b, c] = v3, ar = Math.hypot((b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]), (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]), (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+      const tiny = Math.min(...e) < 0.01;
+      if (ar < 2e-9 && !tiny) bad++;
+      for (let k = 0; k < 3; k++) { const s = kk(v3[k]) + '>' + kk(v3[(k + 1) % 3]); if (!edgeTris.has(s)) edgeTris.set(s, []); edgeTris.get(s).push(tiny); }
+    }
+    for (const t of edgeTris.values()) if (t.length > 1 && !t.some(Boolean)) bad++;
+    ok(/Simple:\s+yes/.test(log) && vols === 2 && rep.shells === 1 && rep.openEdges === 0 && bad === 0 && near(rep.size[2], r.spot.g.L) && near(rep.size[0], 2 * r.spot.headR, 0.05),
+      `${name} · Spotkopf mit CGAL vereinigt: ${j} Körper → ${vols - 1} mannigfaltiges Volumen, ${rep.shells} Hülle, ${rep.size.map(x => x.toFixed(1)).join(' × ')} mm, ${(rep.volume / 1000).toFixed(1)} cm³, ${((Date.now() - t0) / 1000).toFixed(0)} s`
+      + (rep.nonManifold || rep.degenerate ? ` (Text-STL mit 6 Stellen: ${rep.nonManifold} mehrfache Kanten, ${rep.degenerate} entartete Dreiecke, alle an Kanten < 0,01 mm)` : ''));
   }
   rmSync(dir, { recursive: true, force: true });
 }
